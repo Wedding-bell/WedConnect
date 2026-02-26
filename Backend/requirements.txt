@@ -1,0 +1,27 @@
+# Django latest stable (5.x series)
+Django==5.0.4
+
+# Django REST Framework compatible with Django 5
+djangorestframework==3.15.1
+
+# PostgreSQL driver
+psycopg2-binary==2.9.9
+
+# Celery for background tasks
+celery==5.3.6
+
+# Redis client
+redis==5.0.1
+
+# Django caching with Redis
+django-redis==5.4.0
+
+# Gunicorn for production WSGI/ASGI
+gunicorn==21.2.0
+
+# Uvicorn for ASGI support
+uvicorn==0.27.1
+
+python-dotenv==1.1.1
+
+djangorestframework-simplejwt==5.5.1
