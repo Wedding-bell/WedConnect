@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { Layout } from "@/components/layout/Layout";
+import { Button } from "../components/ui/button";
+import { Layout } from "../components/layout/Layout";
 
 export function HomePage() {
   return (
