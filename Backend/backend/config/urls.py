@@ -34,4 +34,7 @@ urlpatterns = [
 
     # JWT
     path("api/v1/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+
+    # Bookings
+    path("api/v1/bookings/", include("bookings.urls")),
 ]

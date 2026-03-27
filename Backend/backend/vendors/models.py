@@ -15,7 +15,7 @@ class Category(models.Model):
 
 
 # =========================
-# STATE (NEW - IMPORTANT)
+# STATE 
 # =========================
 class State(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -25,7 +25,7 @@ class State(models.Model):
 
 
 # =========================
-# DISTRICT (FIXED RELATION)
+# DISTRICT 
 # =========================
 class District(models.Model):
     name = models.CharField(max_length=100)
@@ -36,7 +36,7 @@ class District(models.Model):
 
 
 # =========================
-# VENDOR (FIXED)
+# VENDOR 
 # =========================
 class Vendor(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="vendor_profile")
@@ -61,3 +61,56 @@ class Vendor(models.Model):
 
     def __str__(self):
         return self.name
+    
+# =========================
+# BOOKING
+# =========================
+class Booking(models.Model):
+    vendor = models.ForeignKey(User, on_delete=models.CASCADE, related_name="bookings")
+
+    customer_name = models.CharField(max_length=150)
+    district = models.ForeignKey(District, on_delete=models.SET_NULL, null=True)
+
+    address = models.TextField()
+
+    phone_number = models.CharField(max_length=15)
+    alternative_phone_number = models.CharField(max_length=15, blank=True, null=True)
+
+    map_url = models.URLField(blank=True, null=True)
+
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    advance_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.customer_name} - {self.vendor.username}"
+
+
+# =========================
+# BOOKING EVENTS (MULTIPLE DATES + TIME)
+# =========================
+class BookingEvent(models.Model):
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="events")
+
+    event_date = models.DateField()
+
+    # Flexible slot
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    def __str__(self):
+        return f"{self.event_date} ({self.start_time} - {self.end_time})"
+
+
+# =========================
+# PAYMENTS (TRACK MULTIPLE PAYMENTS)
+# =========================
+class Payment(models.Model):
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="payments")
+
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    paid_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.amount} - {self.booking.customer_name}"
