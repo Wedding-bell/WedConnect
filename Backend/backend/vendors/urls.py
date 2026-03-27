@@ -1,15 +1,5 @@
 from django.urls import path
-from .views import (
-    CategoryListCreateView,
-    CategoryDetailView,
-    StateListView,
-    DistrictListView,
-    VendorCreateView,
-    VendorListView,
-    VendorDetailUpdateView,
-    VendorDeactivateView,
-    VendorActivateView,
-)
+from .views import *
 
 urlpatterns = [
     # CATEGORY
@@ -37,4 +27,17 @@ urlpatterns = [
 
     # ACTIVATE
     path("vendors/<int:pk>/activate/", VendorActivateView.as_view()),
+
+
+    # Vendor Login
+    path("vendors/login/", VendorLoginView.as_view()),
+
+    # Vendor Me
+    path("vendors/me/", VendorMeView.as_view()),
+
+    # Vendor Forgot Password
+    path("vendors/forgot-password/", VendorForgotPasswordView.as_view()),
+
+    # Vendor Reset Password
+    path("vendors/reset-password/<uid>/<token>/", VendorResetPasswordView.as_view()),
 ]

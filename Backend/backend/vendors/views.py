@@ -2,19 +2,25 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from .models import State, District
+from .models import *
 from .serializers import StateSerializer, DistrictSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.generics import ListAPIView
 from django.contrib.auth import authenticate
 from rest_framework.generics import RetrieveUpdateAPIView
-from .models import Vendor
-from .models import Category
 from .serializers import CategorySerializer
 from .permissions import IsAdminUserOnly
 from .serializers import VendorSerializer
 from django.core.mail import send_mail
 from django.db import transaction
+from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.models import User
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
 import os
 
 
@@ -81,6 +87,7 @@ class CategoryDetailView(APIView):
 # STATES API
 # =========================
 class StateListView(APIView):
+    permission_classes = [AllowAny]
     def get(self, request):
         states = State.objects.all()
         serializer = StateSerializer(states, many=True)
@@ -91,6 +98,7 @@ class StateListView(APIView):
 # DISTRICTS API (FILTER BY STATE)
 # =========================
 class DistrictListView(APIView):
+    permission_classes = [AllowAny]
     def get(self, request):
         state_name = request.query_params.get("state")
 
@@ -156,7 +164,7 @@ class VendorListView(ListAPIView):
 
 
 class VendorLoginView(APIView):
-
+    permission_classes = [AllowAny]
     def post(self, request):
 
         email = request.data.get("email")
@@ -187,7 +195,7 @@ class VendorLoginView(APIView):
     
 
 class VendorDeactivateView(APIView):
-
+    permission_classes = [IsAdminUserOnly]
     def patch(self, request, pk):
 
         try:
@@ -221,3 +229,66 @@ class VendorDetailUpdateView(RetrieveUpdateAPIView):
     queryset = Vendor.objects.all()
     serializer_class = VendorSerializer
     permission_classes = [IsAdminUserOnly]
+
+
+class VendorMeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        vendor = request.user.vendor_profile
+        return Response(VendorSerializer(vendor).data)
+    
+class VendorForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email")
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response(
+                {"message": "If this email exists, a reset link has been sent."},
+                status=200,
+            )
+
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        reset_link = f"http://localhost:3000/reset-password/{uid}/{token}/"
+
+        send_mail(
+            subject="Reset Your Password",
+            message=f"Click the link to reset your password:\n{reset_link}",
+            from_email=os.getenv("DEFAULT_FROM_EMAIL"),
+            recipient_list=[email],
+        )
+
+        return Response(
+            {"message": "Password reset link sent to email."},
+            status=200,
+        )
+    
+
+
+
+
+class VendorResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, uid, token):
+        password = request.data.get("password")
+
+        try:
+            uid = urlsafe_base64_decode(uid).decode()
+            user = User.objects.get(pk=uid)
+        except Exception:
+            return Response({"error": "Invalid link"}, status=400)
+
+        if not default_token_generator.check_token(user, token):
+            return Response({"error": "Token expired or invalid"}, status=400)
+
+        user.set_password(password)
+        user.save()
+
+        return Response({"message": "Password reset successful"})

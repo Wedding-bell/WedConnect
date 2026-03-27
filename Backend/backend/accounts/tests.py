@@ -1,109 +1,151 @@
-from django.contrib.auth.models import User
-from django.urls import reverse
 from rest_framework.test import APITestCase
-from rest_framework import status
+from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
-class AdminAuthTests(APITestCase):
+class AccountsTests(APITestCase):
 
     def setUp(self):
-        # =========================
-        # CREATE USERS
-        # =========================
+        # Admin user (allowed)
         self.admin = User.objects.create_superuser(
             username="admin",
-            email="admin@test.com",
-            password="admin123"
+            password="admin123",
+            email="admin@test.com"
         )
 
+        # Normal user (NOT superuser)
         self.user = User.objects.create_user(
             username="user",
-            email="user@test.com",
-            password="user123"
+            password="user123",
+            email="user@test.com"
         )
 
-        # =========================
-        # URLS (IMPORTANT: NAMESPACE FIXED)
-        # =========================
-        self.login_url = reverse("accounts:admin-login")
-        self.me_url = reverse("accounts:admin-me")
-        self.logout_url = reverse("accounts:admin-logout")
+        self.login_url = "/api/v1/accounts/login/"
+        self.me_url = "/api/v1/accounts/me/"
+        self.logout_url = "/api/v1/accounts/logout/"
 
     # =========================
-    # TEST 1: ADMIN LOGIN SUCCESS
+    # LOGIN TESTS
     # =========================
+
     def test_admin_login_success(self):
-        response = self.client.post(self.login_url, {
+        res = self.client.post(self.login_url, {
             "username": "admin",
             "password": "admin123"
         })
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("tokens", response.data)
-        self.assertIn("access", response.data["tokens"])
-        self.assertIn("refresh", response.data["tokens"])
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("tokens", res.data)
+        self.assertIn("access", res.data["tokens"])
+        self.assertIn("refresh", res.data["tokens"])
 
-    # =========================
-    # TEST 2: INVALID LOGIN
-    # =========================
-    def test_invalid_login(self):
-        response = self.client.post(self.login_url, {
+    def test_login_invalid_credentials(self):
+        res = self.client.post(self.login_url, {
             "username": "admin",
             "password": "wrongpass"
         })
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(res.status_code, 400)
 
-    # =========================
-    # TEST 3: NON-SUPERUSER BLOCKED
-    # =========================
-    def test_non_superuser_login_block(self):
-        response = self.client.post(self.login_url, {
+    def test_login_non_superuser(self):
+        res = self.client.post(self.login_url, {
             "username": "user",
             "password": "user123"
         })
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("Access denied", str(res.data))
 
     # =========================
-    # TEST 4: ADMIN ME SUCCESS
+    # ME ENDPOINT
     # =========================
-    def test_admin_me(self):
-        refresh = RefreshToken.for_user(self.admin)
-        access_token = str(refresh.access_token)
 
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
-
-        response = self.client.get(self.me_url)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["username"], "admin")
-
-    # =========================
-    # TEST 5: NON-ADMIN ME BLOCKED
-    # =========================
-    def test_non_admin_me_access(self):
-        refresh = RefreshToken.for_user(self.user)
-        access_token = str(refresh.access_token)
-
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
-
-        response = self.client.get(self.me_url)
-
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    # =========================
-    # TEST 6: LOGOUT SUCCESS
-    # =========================
-    def test_logout(self):
-        refresh = RefreshToken.for_user(self.admin)
-        access_token = str(refresh.access_token)
-
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
-
-        response = self.client.post(self.logout_url, {
-            "refresh": str(refresh)
+    def test_me_success_admin(self):
+        login = self.client.post(self.login_url, {
+            "username": "admin",
+            "password": "admin123"
         })
 
-        self.assertEqual(response.status_code, status.HTTP_205_RESET_CONTENT)
+        access = login.data["tokens"]["access"]
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+
+        res = self.client.get(self.me_url)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["username"], "admin")
+
+    def test_me_without_token(self):
+        res = self.client.get(self.me_url)
+
+        # Because DEFAULT permission is IsAuthenticated
+        self.assertIn(res.status_code, [401, 403])
+
+    def test_me_non_superuser_forbidden(self):
+        refresh = RefreshToken.for_user(self.user)
+        access = str(refresh.access_token)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+
+        res = self.client.get(self.me_url)
+
+        self.assertEqual(res.status_code, 403)
+
+    # =========================
+    # LOGOUT TESTS
+    # =========================
+
+    def test_logout_success(self):
+        login = self.client.post(self.login_url, {
+            "username": "admin",
+            "password": "admin123"
+        })
+
+        access = login.data["tokens"]["access"]
+        refresh = login.data["tokens"]["refresh"]
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+
+        res = self.client.post(self.logout_url, {
+            "refresh": refresh
+        })
+
+        self.assertEqual(res.status_code, 205)
+
+    def test_logout_without_refresh_token(self):
+        login = self.client.post(self.login_url, {
+            "username": "admin",
+            "password": "admin123"
+        })
+
+        access = login.data["tokens"]["access"]
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+
+        res = self.client.post(self.logout_url, {})
+
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("Refresh token is required", str(res.data))
+
+    def test_logout_invalid_token(self):
+        login = self.client.post(self.login_url, {
+            "username": "admin",
+            "password": "admin123"
+        })
+
+        access = login.data["tokens"]["access"]
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+
+        res = self.client.post(self.logout_url, {
+            "refresh": "invalidtoken123"
+        })
+
+        self.assertEqual(res.status_code, 400)
+
+    def test_logout_without_auth(self):
+        res = self.client.post(self.logout_url, {
+            "refresh": "somevalue"
+        })
+
+        self.assertIn(res.status_code, [401, 403])

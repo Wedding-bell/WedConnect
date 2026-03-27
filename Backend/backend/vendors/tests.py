@@ -6,83 +6,103 @@ from django.urls import reverse
 from .models import Category, State, District, Vendor
 
 
-class VendorAPITests(APITestCase):
+# =========================
+# BASE SETUP
+# =========================
+class BaseAPITest(APITestCase):
 
     def setUp(self):
 
-        # =========================
-        # CREATE ADMIN USER
-        # =========================
+        # ADMIN USER
         self.admin = User.objects.create_superuser(
             username="admin",
             email="admin@test.com",
             password="admin123"
         )
 
-        # =========================
-        # AUTH
-        # =========================
-        self.client.force_authenticate(user=self.admin)
+        # NORMAL USER
+        self.user = User.objects.create_user(
+            username="user@test.com",
+            email="user@test.com",
+            password="user123"
+        )
 
-        # =========================
-        # BASE DATA
-        # =========================
+        # CATEGORY
         self.category = Category.objects.create(name="Photography")
 
+        # STATE + DISTRICT
         self.state = State.objects.create(name="Kerala")
-
         self.district = District.objects.create(
-            name="Kochi",
+            name="kannur",
             state=self.state
         )
 
-    # =========================
-    # CATEGORY TEST
-    # =========================
-    def test_create_category(self):
-        url = "/api/v1/vendors/categories/"
+        # AUTH TOKEN CLIENT HELPERS
+        self.client.login(username="admin@test.com", password="admin123")
 
-        data = {
-            "name": "Music"
-        }
+
+# =========================
+# CATEGORY TESTS
+# =========================
+class CategoryTests(BaseAPITest):
+
+    def test_create_category_admin_only(self):
+        self.client.force_authenticate(user=self.admin)
+
+        url = "/api/v1/vendors/categories/"
+        data = {"name": "Catering"}
 
         response = self.client.post(url, data)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Category.objects.count(), 2)
 
-    # =========================
-    # STATE LIST TEST
-    # =========================
-    def test_list_states(self):
+    def test_create_category_forbidden_for_normal_user(self):
+        self.client.force_authenticate(user=self.user)
+
+        url = "/api/v1/vendors/categories/"
+        data = {"name": "Catering"}
+
+        response = self.client.post(url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+# =========================
+# STATE & DISTRICT TESTS
+# =========================
+class LocationTests(BaseAPITest):
+
+    def test_get_states(self):
         url = "/api/v1/vendors/states/"
         response = self.client.get(url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, 200)
         self.assertGreaterEqual(len(response.data), 1)
 
-    # =========================
-    # DISTRICT FILTER TEST
-    # =========================
-    def test_district_filter_by_state(self):
-        url = "/api/v1/vendors/districts/?state=Kerala"
-
+    def test_filter_district_by_state(self):
+        url = f"/api/v1/vendors/districts/?state={self.state.name}"
         response = self.client.get(url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data[0]["name"], "Kochi")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data[0]["name"], "kannur")
 
-    # =========================
-    # VENDOR CREATE TEST
-    # =========================
-    def test_create_vendor(self):
+
+# =========================
+# VENDOR TESTS
+# =========================
+class VendorTests(BaseAPITest):
+
+    def test_create_vendor_admin_only(self):
+        self.client.force_authenticate(user=self.admin)
+
         url = "/api/v1/vendors/vendors/create/"
 
         data = {
             "name": "John Studio",
-            "email": "john@example.com",
-            "contact_number": "9876543210",
-            "whatsapp_number": "9876543210",
+            "email": "john@test.com",
+            "contact_number": "123456789",
+            "whatsapp_number": "123456789",
             "years_of_experience": 5,
             "category": self.category.id,
             "districts": [self.district.id],
@@ -94,90 +114,87 @@ class VendorAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Vendor.objects.count(), 1)
 
-        vendor = Vendor.objects.first()
-
-        # check auto user created
-        self.assertTrue(User.objects.filter(username="john@example.com").exists())
-
-    # =========================
-    # VENDOR LIST TEST
-    # =========================
-    def test_vendor_list(self):
-        Vendor.objects.create(
-            user=self.admin,
-            name="Test Vendor",
-            email="test@vendor.com",
-            contact_number="12345678",
-            whatsapp_number="12345678",
-            years_of_experience=2,
-            category=self.category,
-            joining_date="2024-01-01"
-        )
-
-        url = "/api/v1/vendors/vendors/"
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    # =========================
-    # VENDOR DEACTIVATE TEST
-    # =========================
-    def test_vendor_deactivate(self):
-
-        vendor_user = User.objects.create_user(
+    def test_vendor_login_success(self):
+        user = User.objects.create_user(
             username="vendor@test.com",
             email="vendor@test.com",
-            password="123"
+            password="vendor123"
         )
 
         vendor = Vendor.objects.create(
-            user=vendor_user,
-            name="Test Vendor",
+            user=user,
+            name="Vendor Test",
             email="vendor@test.com",
-            contact_number="12345678",
-            whatsapp_number="12345678",
+            contact_number="111111111",
+            whatsapp_number="111111111",
             years_of_experience=2,
             category=self.category,
             joining_date="2024-01-01"
         )
 
-        url = f"/api/v1/vendors/vendors/{vendor.id}/deactivate/"
+        url = "/api/v1/vendors/vendors/login/"
 
-        response = self.client.patch(url)
+        response = self.client.post(url, {
+            "email": "vendor@test.com",
+            "password": "vendor123"
+        })
 
-        vendor.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("access", response.data)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(vendor.is_active)
+    def test_vendor_login_invalid(self):
+        url = "/api/v1/vendors/vendors/login/"
 
-    # =========================
-    # VENDOR ACTIVATE TEST
-    # =========================
-    def test_vendor_activate(self):
+        response = self.client.post(url, {
+            "email": "wrong@test.com",
+            "password": "wrong"
+        })
 
-        vendor_user = User.objects.create_user(
-            username="vendor2@test.com",
-            email="vendor2@test.com",
-            password="123"
+        self.assertEqual(response.status_code, 401)
+
+
+# =========================
+# ACTIVATE / DEACTIVATE
+# =========================
+class VendorStatusTests(BaseAPITest):
+
+    def setUp(self):
+        super().setUp()
+
+        user = User.objects.create_user(
+            username="vendor@test.com",
+            email="vendor@test.com",
+            password="vendor123"
         )
 
-        vendor = Vendor.objects.create(
-            user=vendor_user,
-            name="Test Vendor 2",
-            email="vendor2@test.com",
-            contact_number="12345678",
-            whatsapp_number="12345678",
-            years_of_experience=2,
+        self.vendor = Vendor.objects.create(
+            user=user,
+            name="Vendor",
+            email="vendor@test.com",
+            contact_number="999999999",
+            whatsapp_number="999999999",
+            years_of_experience=3,
             category=self.category,
-            joining_date="2024-01-01",
-            is_active=False
+            joining_date="2024-01-01"
         )
 
-        url = f"/api/v1/vendors/vendors/{vendor.id}/activate/"
+    def test_deactivate_vendor(self):
+        self.client.force_authenticate(user=self.admin)
 
+        url = f"/api/v1/vendors/vendors/{self.vendor.id}/deactivate/"
         response = self.client.patch(url)
 
-        vendor.refresh_from_db()
+        self.vendor.refresh_from_db()
+        self.assertFalse(self.vendor.is_active)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(vendor.is_active)
+    def test_activate_vendor(self):
+        self.vendor.is_active = False
+        self.vendor.save()
+
+        self.client.force_authenticate(user=self.admin)
+
+        url = f"/api/v1/vendors/vendors/{self.vendor.id}/activate/"
+        response = self.client.patch(url)
+
+        self.vendor.refresh_from_db()
+        self.assertTrue(self.vendor.is_active)

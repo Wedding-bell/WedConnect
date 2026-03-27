@@ -46,7 +46,11 @@ class VendorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Vendor
-        fields = "__all__"
+        fields = [
+            "id", "name", "email", "contact_number",
+            "whatsapp_number", "years_of_experience",
+            "category", "districts", "joining_date", "is_active"
+        ]
         extra_kwargs = {
             "user": {"read_only": True}
         }
@@ -107,3 +111,7 @@ class VendorSerializer(serializers.ModelSerializer):
         vendor.raw_password = raw_password
 
         return vendor
+    
+
+class VendorForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
