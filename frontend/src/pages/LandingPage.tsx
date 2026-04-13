@@ -1,14 +1,69 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, HelpCircle } from "lucide-react";
+import { ArrowRight, HelpCircle, Leaf } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { cn } from "../lib/utils";
 import handshakeImage from "../assets/images/handshake.png";
+import landingMobileImage from "../assets/images/landing-mobile.png";
 
 export function LandingPage() {
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
-      {/* Left panel - branding */}
-      <aside
+    <>
+      {/* Mobile: single-column premium app-like layout */}
+      <div
+        className={cn(
+          "flex min-h-screen min-h-[100dvh] flex-col bg-white",
+          "pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]",
+          "lg:hidden"
+        )}
+      >
+        <div className="flex flex-1 flex-col items-center justify-center px-8 py-10 sm:px-10 sm:py-12">
+          <div className="w-full max-w-sm text-center">
+            <h1 className="font-heading text-[1.6rem] font-medium leading-tight text-slate-700 sm:text-2xl">
+              Welcome to WedConnect
+            </h1>
+            <p className="font-heading mt-2 text-2xl font-bold leading-tight text-slate-900 sm:text-3xl">
+              Your Personal CRM!
+            </p>
+            <p className="mt-5 flex items-center justify-center gap-2 text-center text-[0.9375rem] leading-relaxed text-stone-600 sm:text-base">
+              Manage your clients, income, and schedule – all in one place
+              <Leaf className="h-4 w-4 shrink-0 text-emerald-500/90" aria-hidden />
+            </p>
+          </div>
+          <div className="my-10 flex flex-1 items-center justify-center sm:my-12">
+            <img
+              src={landingMobileImage}
+              alt="Manage your business with WedConnect"
+              className="h-52 w-52 max-w-[80vw] object-contain sm:h-60 sm:w-60"
+            />
+          </div>
+          <div className="w-full max-w-sm space-y-5">
+            <Button
+              asChild
+              size="lg"
+              className="h-14 w-full rounded-2xl bg-slate-800 py-6 text-base font-semibold shadow-md shadow-slate-900/20 transition-shadow hover:bg-slate-900 hover:shadow-lg hover:shadow-slate-900/25 active:scale-[0.98]"
+            >
+              <Link to="/register" className="inline-flex items-center justify-center gap-2.5">
+                Get Started
+                <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
+              </Link>
+            </Button>
+            <p className="text-center text-[0.9375rem] text-stone-600">
+              Already have an account?{" "}
+              <Link
+                to="/login"
+                className="font-semibold text-blue-600 underline underline-offset-2 decoration-2 hover:text-blue-700"
+              >
+                Sign In
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop: two-column layout */}
+      <div className="hidden min-h-screen flex-col lg:flex lg:flex-row">
+        {/* Left panel - branding */}
+        <aside
         className={cn(
           "relative flex flex-col items-center justify-between overflow-hidden px-8 py-12",
           "lg:w-[42%] lg:min-h-screen"
@@ -106,6 +161,7 @@ export function LandingPage() {
           </Link>
         </footer>
       </main>
-    </div>
+      </div>
+    </>
   );
 }
