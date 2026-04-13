@@ -5,6 +5,8 @@ import { AdminLogin } from "./pages/admin/AdminLogin";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminVendors } from "./pages/admin/AdminVendors";
 import { AdminLayout } from "./components/layout/AdminLayout";
+import { VendorLogin } from "./pages/vendor/VendorLogin";
+import { VendorLayout } from "./components/layout/VendorLayout";
 
 function App() {
   return (
@@ -24,6 +26,14 @@ function App() {
           <Route path="bookings" element={<PlaceholderPage title="Bookings Table" />} />
           <Route path="vendors" element={<AdminVendors />} />
           <Route path="settings" element={<PlaceholderPage title="Admin Settings" />} />
+        </Route>
+
+        <Route path="/vendor/login" element={<VendorLogin />} />
+        <Route path="/vendor" element={<VendorLayout />}>
+          <Route path="dashboard" element={<PlaceholderPage title="Vendor Overview Dashboard" />} />
+          <Route path="bookings" element={<PlaceholderPage title="Your Bookings" />} />
+          <Route path="calendar" element={<PlaceholderPage title="Event Calendar" />} />
+          <Route path="settings" element={<PlaceholderPage title="Profile Settings" />} />
         </Route>
       </Routes>
     </BrowserRouter>
