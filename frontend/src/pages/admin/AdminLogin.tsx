@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Shield } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { adminLogin } from "../../api/adminAuth";
 
 export function AdminLogin() {
+  const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,9 +19,17 @@ export function AdminLogin() {
 
     try {
       const response = await adminLogin({ username, password });
-      // TODO: Handle successful login (store token, redirect)
+      
+      if (response?.tokens?.access) {
+        localStorage.setItem("token", response.tokens.access);
+        // Optionally store refresh token if you implement token refresh later
+        if (response.tokens.refresh) {
+          localStorage.setItem("refreshToken", response.tokens.refresh);
+        }
+      }
+
       console.log("Admin Login Successful", response);
-      alert("Login successful!");
+      navigate("/admin/dashboard");
     } catch (err) {
       console.error(err);
       if (typeof err === "object" && err !== null && "response" in err) {

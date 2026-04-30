@@ -93,7 +93,7 @@ export function VendorLogin() {
 
             <div className="flex items-center justify-between">
               <div className="text-sm">
-                <Link to="/forgot-password" className="font-medium text-zinc-600 hover:text-zinc-900">
+                <Link to="/vendor/forgot-password" className="font-medium text-zinc-600 hover:text-zinc-900">
                   Forgot your password?
                 </Link>
               </div>

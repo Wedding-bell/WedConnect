@@ -22,6 +22,16 @@ export async function getCategories(): Promise<Category[]> {
   return data;
 }
 
+export async function createCategory(payload: { name: string }) {
+  const { data } = await apiClient.post("/api/v1/vendors/categories/", payload);
+  return data;
+}
+
+export async function deleteCategory(id: number) {
+  const { data } = await apiClient.delete(`/api/v1/vendors/categories/${id}/`);
+  return data;
+}
+
 export async function getDistricts(): Promise<District[]> {
   const { data } = await apiClient.get("/api/v1/vendors/districts/");
   return data;

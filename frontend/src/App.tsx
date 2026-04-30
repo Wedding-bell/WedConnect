@@ -4,8 +4,11 @@ import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { AdminLogin } from "./pages/admin/AdminLogin";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminVendors } from "./pages/admin/AdminVendors";
+import { AdminCategories } from "./pages/admin/AdminCategories";
 import { AdminLayout } from "./components/layout/AdminLayout";
 import { VendorLogin } from "./pages/vendor/VendorLogin";
+import { VendorForgotPassword } from "./pages/vendor/VendorForgotPassword";
+import { VendorResetPassword } from "./pages/vendor/VendorResetPassword";
 import { VendorLayout } from "./components/layout/VendorLayout";
 import { VendorBookings } from "./pages/vendor/VendorBookings";
 
@@ -24,12 +27,15 @@ function App() {
         {/* Protected Area Layout */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="categories" element={<AdminCategories />} />
           <Route path="bookings" element={<PlaceholderPage title="Bookings Table" />} />
           <Route path="vendors" element={<AdminVendors />} />
           <Route path="settings" element={<PlaceholderPage title="Admin Settings" />} />
         </Route>
 
         <Route path="/vendor/login" element={<VendorLogin />} />
+        <Route path="/vendor/forgot-password" element={<VendorForgotPassword />} />
+        <Route path="/reset-password/:uid/:token" element={<VendorResetPassword />} />
         <Route path="/vendor" element={<VendorLayout />}>
           <Route path="dashboard" element={<PlaceholderPage title="Vendor Overview Dashboard" />} />
           <Route path="bookings" element={<VendorBookings />} />

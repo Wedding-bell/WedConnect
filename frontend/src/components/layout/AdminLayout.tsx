@@ -6,7 +6,8 @@ import {
   MessageSquare, 
   Search,
   Settings as SettingsIcon,
-  Bell
+  Bell,
+  Layers
 } from "lucide-react";
 import { Input } from "../ui/input";
 
@@ -15,6 +16,7 @@ export function AdminLayout() {
 
   const navItems = [
     { name: "Dashboard", href: "/admin/dashboard", icon: Home },
+    { name: "Categories", href: "/admin/categories", icon: Layers },
     { name: "Bookings", href: "/admin/bookings", icon: BookOpen },
     { name: "Vendors", href: "/admin/vendors", icon: Users },
     { name: "Complaints", href: "/admin/complaints", icon: MessageSquare },
