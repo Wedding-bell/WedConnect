@@ -11,6 +11,7 @@ import { VendorForgotPassword } from "./pages/vendor/VendorForgotPassword";
 import { VendorResetPassword } from "./pages/vendor/VendorResetPassword";
 import { VendorLayout } from "./components/layout/VendorLayout";
 import { VendorBookings } from "./pages/vendor/VendorBookings";
+import { VendorCalendar } from "./pages/vendor/VendorCalendar";
 
 function App() {
   return (
@@ -39,7 +40,7 @@ function App() {
         <Route path="/vendor" element={<VendorLayout />}>
           <Route path="dashboard" element={<PlaceholderPage title="Vendor Overview Dashboard" />} />
           <Route path="bookings" element={<VendorBookings />} />
-          <Route path="calendar" element={<PlaceholderPage title="Event Calendar" />} />
+          <Route path="calendar" element={<VendorCalendar />} />
           <Route path="settings" element={<PlaceholderPage title="Profile Settings" />} />
         </Route>
       </Routes>

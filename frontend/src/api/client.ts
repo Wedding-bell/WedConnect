@@ -14,7 +14,8 @@ export const apiClient = axios.create({
 
 // Add auth token in a request interceptor
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+  // Check for both admin and vendor tokens
+  const token = localStorage.getItem("token") || localStorage.getItem("vendor_access_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -24,11 +25,15 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const isVendorPath = window.location.pathname.startsWith("/vendor");
+    const loginPath = isVendorPath ? "/vendor/login" : "/admin/login";
+    const accessKey = isVendorPath ? "vendor_access_token" : "token";
+    const refreshKey = isVendorPath ? "vendor_refresh_token" : "refreshToken";
 
     // If error is 401 and not already retrying
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const refreshToken = localStorage.getItem("refreshToken");
+      const refreshToken = localStorage.getItem(refreshKey);
 
       if (refreshToken) {
         try {
@@ -38,7 +43,7 @@ apiClient.interceptors.response.use(
           });
 
           const newAccessToken = data.access;
-          localStorage.setItem("token", newAccessToken);
+          localStorage.setItem(accessKey, newAccessToken);
 
           // Update the header and retry the original request
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -46,15 +51,15 @@ apiClient.interceptors.response.use(
         } catch (refreshError) {
           // If refresh fails, log out the user
           console.error("Token refresh failed:", refreshError);
-          localStorage.removeItem("token");
-          localStorage.removeItem("refreshToken");
-          window.location.href = "/admin/login";
+          localStorage.removeItem(accessKey);
+          localStorage.removeItem(refreshKey);
+          window.location.href = loginPath;
           return Promise.reject(refreshError);
         }
       } else {
         // No refresh token found, log out
-        localStorage.removeItem("token");
-        window.location.href = "/admin/login";
+        localStorage.removeItem(accessKey);
+        window.location.href = loginPath;
       }
     }
 
