@@ -1,21 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import type { Category, District, CreateVendorPayload } from "../../types";
+import type { Category, CreateVendorPayload } from "../../types";
+import { fetchDistricts, type District as APIDistrict } from "../../api/adminDistricts";
+
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (payload: CreateVendorPayload) => Promise<void>;
   categories: Category[];
-  districts: District[];
 }
 
-export function CreateVendorModal({ isOpen, onClose, onSubmit, categories, districts }: Props) {
+export function CreateVendorModal({ isOpen, onClose, onSubmit, categories }: Props) {
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [availableDistricts, setAvailableDistricts] = useState<APIDistrict[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setLoadingDistricts(true);
+    fetchDistricts()
+      .then(setAvailableDistricts)
+      .catch((err) => {
+        console.error("Failed to fetch districts", err);
+        setError("Failed to load districts");
+      })
+      .finally(() => setLoadingDistricts(false));
+  }, [isOpen]);
+
+
   
+
+
   const [formData, setFormData] = useState<CreateVendorPayload>({
     name: "",
     email: "",
@@ -199,26 +218,33 @@ export function CreateVendorModal({ isOpen, onClose, onSubmit, categories, distr
           <div className="space-y-2 pt-2">
             <label className="text-sm font-medium text-zinc-700">Operating Districts *</label>
             <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-3 border border-zinc-200 rounded-lg bg-zinc-50">
-              {districts.map(dict => {
-                const isSelected = formData.districts?.includes(dict.id);
-                return (
-                  <button
-                    key={dict.id}
-                    type="button"
-                    onClick={() => handleDistrictToggle(dict.id)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border ${
-                      isSelected 
-                        ? "bg-zinc-900 border-zinc-900 text-white" 
-                        : "bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300"
-                    }`}
-                  >
-                    {dict.name}
-                  </button>
-                )
-              })}
-              {districts.length === 0 && (
-                <span className="text-zinc-400 text-xs">No districts loaded.</span>
+              {loadingDistricts ? (
+                <div className="text-sm text-zinc-500">Loading districts…</div>
+              ) : (
+                <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-3 border border-zinc-200 rounded-lg bg-zinc-50">
+                  {availableDistricts.map(dict => {
+                    const isSelected = formData.districts?.includes(dict.id);
+                    return (
+                      <button
+                        key={dict.id}
+                        type="button"
+                        onClick={() => handleDistrictToggle(dict.id)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border ${
+                          isSelected
+                            ? "bg-zinc-900 border-zinc-900 text-white"
+                            : "bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300"
+                        }`}
+                      >
+                        {dict.name}
+                      </button>
+                    );
+                  })}
+                  {availableDistricts.length === 0 && (
+                    <span className="text-zinc-400 text-xs">No districts loaded.</span>
+                  )}
+                </div>
               )}
+
             </div>
           </div>
           </div>
