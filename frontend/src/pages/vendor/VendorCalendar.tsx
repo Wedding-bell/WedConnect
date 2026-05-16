@@ -79,7 +79,7 @@ function StatCard({ value, label }: { value: string | number; label: string }) {
 // ─── Booking Card ──────────────────────────────────────────────────────────────
 
 function BookingCard({ entry }: { entry: CalendarEntry }) {
-  const balance = Math.max(0, entry.total_amount - entry.advance_amount);
+  const balance = entry.balance_amount;
   return (
     <div className="bg-zinc-50 rounded-2xl p-4">
       {/* Top row */}
@@ -180,7 +180,9 @@ export function VendorCalendar() {
       if (y === currentYear && m === currentMonth + 1) monthCount += entries.length;
       if (k >= tk) {
         upcoming += entries.length;
-        entries.forEach((e) => { due += Math.max(0, e.total_amount - e.advance_amount); });
+        entries.forEach((e) => {
+          due += e.balance_amount;
+        });
       }
     });
     const dueStr =

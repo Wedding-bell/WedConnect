@@ -98,10 +98,27 @@ class BookingListSerializer(serializers.ModelSerializer):
     balance_amount = serializers.SerializerMethodField()
     payment_status = serializers.CharField(read_only=True)
     event_status = serializers.CharField(read_only=True)
+    dates = BookingDateSerializer(many=True, read_only=True)
 
     class Meta:
         model = Booking
-        fields = "__all__"
+        fields = [
+            "id",
+            "customer_name",
+            "district",
+            "address",
+            "phone_number",
+            "alternative_phone_number",
+            "map_url",
+            "total_amount",
+            "advance_amount",
+            "created_at",
+            "total_paid",
+            "balance_amount",
+            "payment_status",
+            "event_status",
+            "dates",
+        ]
 
     def get_total_paid(self, obj):
         return obj.total_paid

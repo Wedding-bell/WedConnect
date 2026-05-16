@@ -120,7 +120,7 @@ export function VendorBookings() {
                     </td>
                     <td className="px-4 sm:px-6 py-4">
                       <p className="font-semibold text-stone-900">₹{Number(b.total_amount).toLocaleString()}</p>
-                      <p className="text-xs text-stone-400">Bal: ₹{Number(b.balance_amount).toLocaleString()}</p>
+                      <p className="text-xs text-stone-400">Bal: ₹{(Number(b.balance_amount) || 0).toLocaleString()}</p>
                     </td>
                     <td className="px-4 sm:px-6 py-4">
                       <PaymentBadge status={b.payment_status} />
