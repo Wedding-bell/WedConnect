@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { LoginCredentials, RegisterPayload } from "@/types";
+import type { LoginCredentials, RegisterPayload } from "../types";
 
 export async function login(credentials: LoginCredentials) {
   // Stub until backend POST /api/login is ready
