@@ -169,7 +169,6 @@ class VendorLoginView(APIView):
 
         email = request.data.get("email")
         password = request.data.get("password")
-
         user = authenticate(username=email, password=password)
 
         if user is None:
