@@ -3,8 +3,9 @@ import type { Vendor, Category, District, CreateVendorPayload } from "../types";
 
 export async function getVendors(): Promise<Vendor[]> {
   const { data } = await apiClient.get("/api/v1/vendors/vendors/");
-  return data;
+  return data.results ?? [];
 }
+
 
 // Additional functions for Vendor ops
 export async function activateVendor(id: number) {
