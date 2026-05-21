@@ -192,3 +192,18 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'accounts.backends.EmailBackend',
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://52-204-212-158.nip.io",
+    # if you ever switch to the sslip.io wildcard, add it too:
+    "https://52-204-212-158.sslip.io",
+]
+
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+
+
