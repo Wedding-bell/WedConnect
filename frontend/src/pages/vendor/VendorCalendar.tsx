@@ -161,13 +161,13 @@ export function VendorCalendar() {
   }, []);
 
   // ── Calendar grid ──
-  const { calendarDays, daysInMonth } = useMemo(() => {
+  const { calendarDays } = useMemo(() => {
     const dim = new Date(currentYear, currentMonth + 1, 0).getDate();
     const firstDay = new Date(currentYear, currentMonth, 1).getDay();
     const days: (number | null)[] = [];
     for (let i = 0; i < firstDay; i++) days.push(null);
     for (let d = 1; d <= dim; d++) days.push(d);
-    return { calendarDays: days, daysInMonth: dim };
+    return { calendarDays: days };
   }, [currentMonth, currentYear]);
 
   // ── Stats ──
