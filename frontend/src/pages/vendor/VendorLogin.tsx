@@ -10,7 +10,13 @@ export function VendorLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  useEffect(() => {
+    const token = localStorage.getItem("vendor_access_token");
+    if (token) {
+      navigate("/vendor/dashboard");
+    }
+  }, []);
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

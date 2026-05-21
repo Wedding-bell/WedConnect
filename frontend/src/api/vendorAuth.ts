@@ -14,3 +14,8 @@ export async function vendorResetPassword(uid: string, token: string, password: 
   const { data } = await apiClient.post(`/api/v1/vendors/reset-password/${uid}/${token}/`, { password });
   return data;
 }
+export async function vendorLogout() {
+  // Calls backend logout endpoint; adjust if needed
+  const { data } = await apiClient.post("/api/v1/vendors/logout/");
+  return data;
+}
