@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
@@ -10,6 +10,9 @@ export function AdminLogin() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Redirect if already authenticated
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -17,36 +20,28 @@ export function AdminLogin() {
     }
   }, []);
 
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-
     try {
       const response = await adminLogin({ username, password });
-      
       if (response?.tokens?.access) {
         localStorage.setItem("token", response.tokens.access);
-        // Optionally store refresh token if you implement token refresh later
         if (response.tokens.refresh) {
           localStorage.setItem("refreshToken", response.tokens.refresh);
         }
       }
-
       console.log("Admin Login Successful", response);
       navigate("/admin/dashboard");
     } catch (err) {
       console.error(err);
-      if (typeof err === "object" && err !== null && "response" in err) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const errorResp = (err as Record<string, any>).response?.data;
-        setError(
-          errorResp?.error || 
-          errorResp?.non_field_errors?.[0] || 
-          "Failed to login. Please check your credentials."
-        );
-      } else {
-        setError("Failed to login. Please check your credentials.");
-      }
+      const errorResp = (err as any)?.response?.data;
+      setError(
+        errorResp?.error ||
+        errorResp?.non_field_errors?.[0] ||
+        "Failed to login. Please check your credentials."
+      );
     } finally {
       setLoading(false);
     }
@@ -60,54 +55,22 @@ export function AdminLogin() {
             <div className="bg-zinc-100 p-3 rounded-full mb-4">
               <Shield className="w-8 h-8 text-zinc-900" />
             </div>
-            <h1 className="text-2xl font-semibold text-zinc-900 tracking-tight">
-              WedConnect Admin
-            </h1>
-            <p className="text-zinc-500 text-sm mt-2">
-              Sign in to manage vendors and platform settings
-            </p>
+            <h1 className="text-2xl font-semibold text-zinc-900 tracking-tight">WedConnect Admin</h1>
+            <p className="text-zinc-500 text-sm mt-2">Sign in to manage vendors and platform settings</p>
           </div>
-
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-md">
-                {error}
-              </div>
+              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-md">{error}</div>
             )}
-            
             <div className="space-y-1">
-              <label className="text-sm font-medium text-zinc-700" htmlFor="username">
-                Username
-              </label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="admin"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
+              <label className="text-sm font-medium text-zinc-700" htmlFor="username">Username</label>
+              <Input id="username" type="text" placeholder="admin" value={username} onChange={e => setUsername(e.target.value)} required />
             </div>
-
             <div className="space-y-1">
-              <label className="text-sm font-medium text-zinc-700" htmlFor="password">
-                Password
-              </label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <label className="text-sm font-medium text-zinc-700" htmlFor="password">Password</label>
+              <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
             </div>
-
-            <Button
-              type="submit"
-              className="w-full bg-zinc-900 text-white hover:bg-black transition-colors"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full bg-zinc-900 text-white hover:bg-black transition-colors" disabled={loading}>
               {loading ? "Signing in..." : "Sign in to Dashboard"}
             </Button>
           </form>

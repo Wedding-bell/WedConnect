@@ -9,7 +9,7 @@ import { AdminLayout } from "./components/layout/AdminLayout";
 import { VendorLogin } from "./pages/vendor/VendorLogin";
 import { VendorForgotPassword } from "./pages/vendor/VendorForgotPassword";
 import { VendorResetPassword } from "./pages/vendor/VendorResetPassword";
-import { VendorLayout } from "./components/layout/VendorLayout";
+import { VendorDashboard } from "./pages/vendor/VendorDashboard";
 import { VendorBookings } from "./pages/vendor/VendorBookings";
 import { VendorCalendar } from "./pages/vendor/VendorCalendar";
 
