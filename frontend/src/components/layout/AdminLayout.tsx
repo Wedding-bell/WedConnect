@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { 
   Home, 
   BookOpen, 
@@ -7,12 +7,27 @@ import {
   Search,
   Settings as SettingsIcon,
   Bell,
-  Layers
+  Layers,
+  LogOut
 } from "lucide-react";
 import { Input } from "../ui/input";
+import { adminLogout } from "../../api/adminAuth";
 
 export function AdminLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await adminLogout();
+    } catch (e) {
+      console.error("Logout error", e);
+    } finally {
+      localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
+      navigate("/admin/login");
+    }
+  };
 
   const navItems = [
     { name: "Dashboard", href: "/admin/dashboard", icon: Home },
@@ -53,6 +68,16 @@ export function AdminLayout() {
             );
           })}
         </nav>
+        {/* Logout button at the bottom of the sidebar */}
+        <div className="p-4 border-t border-zinc-100">
+          <button
+            onClick={handleLogout}
+            className="flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium text-zinc-500 hover:bg-zinc-50 hover:text-red-600 transition-colors"
+          >
+            <LogOut className="w-5 h-5 mr-4" />
+            Log out
+          </button>
+        </div>
       </aside>
 
       {/* Main Content Area */}
@@ -85,6 +110,13 @@ export function AdminLayout() {
               <button className="p-2 rounded-full bg-zinc-50 text-zinc-500 hover:text-zinc-900 relative">
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-2 right-2.5 w-2 h-2 bg-black rounded-full border border-white"></span>
+              </button>
+              <button
+                onClick={handleLogout}
+                title="Log out"
+                className="p-2 rounded-full bg-zinc-50 text-zinc-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
               </button>
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-zinc-200 shrink-0">
                 <img 

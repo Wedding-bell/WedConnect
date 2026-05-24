@@ -1,14 +1,29 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { 
   Home, 
   BookOpen, 
   Calendar, 
   Settings as SettingsIcon,
-  Bell
+  Bell,
+  LogOut
 } from "lucide-react";
+import { vendorLogout } from "../../api/vendorAuth";
 
 export function VendorLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await vendorLogout();
+    } catch (e) {
+      console.error("Vendor logout error", e);
+    } finally {
+      localStorage.removeItem("vendor_access_token");
+      localStorage.removeItem("vendor_refresh_token");
+      navigate("/vendor/login");
+    }
+  };
 
   const navItems = [
     { name: "Overview", href: "/vendor/dashboard", icon: Home },
@@ -48,14 +63,22 @@ export function VendorLayout() {
             );
           })}
         </nav>
+        {/* Logout button at the bottom of the sidebar */}
         <div className="p-4 border-t border-stone-800">
-          <div className="flex items-center space-x-3">
-             <div className="w-10 h-10 rounded-full bg-stone-800 flex items-center justify-center text-white font-bold">V</div>
-             <div>
-               <p className="text-sm font-medium text-white">Your Business</p>
-               <p className="text-xs text-stone-400">vendor@email.com</p>
-             </div>
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-stone-800 flex items-center justify-center text-white font-bold">V</div>
+            <div>
+              <p className="text-sm font-medium text-white">Your Business</p>
+              <p className="text-xs text-stone-400">vendor@email.com</p>
+            </div>
           </div>
+          <button
+            onClick={handleLogout}
+            className="flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium text-stone-400 hover:bg-white/5 hover:text-red-400 transition-colors"
+          >
+            <LogOut className="w-5 h-5 mr-4" />
+            Log out
+          </button>
         </div>
       </aside>
 
@@ -72,6 +95,13 @@ export function VendorLayout() {
           <div className="flex items-center space-x-2 sm:space-x-6">
             <button className="p-2 rounded-full bg-stone-100 text-stone-600 hover:text-stone-900 relative">
               <Bell className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleLogout}
+              title="Log out"
+              className="p-2 rounded-full bg-stone-100 text-stone-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
             </button>
             <div className="w-8 h-8 sm:h-10 sm:w-10 rounded-full overflow-hidden border border-stone-200 shrink-0 lg:hidden">
                <div className="w-full h-full bg-stone-900 flex items-center justify-center text-white font-bold text-sm">V</div>
