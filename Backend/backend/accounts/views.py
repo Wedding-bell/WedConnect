@@ -49,8 +49,7 @@ class AdminLogoutView(APIView):
     Blacklist the refresh token to log out.
     """
 
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         try:

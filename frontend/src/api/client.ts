@@ -1,12 +1,12 @@
 import axios from "axios";
 
-const baseURL =
+export const apiBaseURL =
   typeof import.meta.env.VITE_API_BASE_URL === "string"
     ? import.meta.env.VITE_API_BASE_URL
     : "http://localhost:8000";
 
 export const apiClient = axios.create({
-  baseURL,
+  baseURL: apiBaseURL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -38,7 +38,7 @@ apiClient.interceptors.response.use(
       if (refreshToken) {
         try {
           // Attempt to refresh the token
-          const { data } = await axios.post(`${baseURL}/api/v1/token/refresh/`, {
+          const { data } = await axios.post(`${apiBaseURL}/api/v1/token/refresh/`, {
             refresh: refreshToken,
           });
 

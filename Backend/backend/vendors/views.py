@@ -193,6 +193,33 @@ class VendorLoginView(APIView):
         })
     
 
+class VendorLogoutView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        refresh_token = request.data.get("refresh")
+
+        if not refresh_token:
+            return Response(
+                {"error": "Refresh token is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except Exception:
+            return Response(
+                {"error": "Invalid or expired token."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {"message": "Logout successful."},
+            status=status.HTTP_205_RESET_CONTENT,
+        )
+
+
 class VendorDeactivateView(APIView):
     permission_classes = [IsAdminUserOnly]
     def patch(self, request, pk):
