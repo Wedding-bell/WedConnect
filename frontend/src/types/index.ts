@@ -70,6 +70,15 @@ export interface BookingDate {
   slots: BookingSlot[];
 }
 
+export interface BookingExpense {
+  id: number;
+  title: string;
+  amount: string;
+  note?: string | null;
+  spent_at: string;
+  created_at: string;
+}
+
 export interface Booking {
   id: number;
   customer_name: string;
@@ -84,9 +93,12 @@ export interface Booking {
   is_deleted: boolean;
   total_paid: number;
   balance_amount: number;
+  total_expense: number;
+  profit_amount: number;
   payment_status: "NOT_PAID" | "PARTIAL" | "PAID";
   event_status: "TODAY" | "UPCOMING" | "PAST" | "UNKNOWN";
   dates: BookingDate[];
+  expenses: BookingExpense[];
 }
 
 export interface CreateBookingPayload {
@@ -99,4 +111,11 @@ export interface CreateBookingPayload {
   total_amount: number;
   advance_amount: number;
   dates: BookingDate[];
+}
+
+export interface CreateBookingExpensePayload {
+  title: string;
+  amount: number;
+  note?: string;
+  spent_at: string;
 }

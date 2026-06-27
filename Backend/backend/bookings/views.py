@@ -51,7 +51,7 @@ class VendorBookingListView(ListAPIView):
         qs = Booking.objects.filter(
             vendor=vendor,
             is_deleted=False
-        ).prefetch_related("dates", "payments")
+        ).prefetch_related("dates", "payments", "expenses")
 
         today = date.today()
 
@@ -87,6 +87,26 @@ class AddPaymentView(APIView):
 
         return Response(serializer.errors, status=400)
     
+class AddExpenseView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        vendor = request.user.vendor_profile
+        booking = get_object_or_404(Booking, pk=pk, vendor=vendor)
+
+        serializer = AddExpenseSerializer(data=request.data)
+
+        if serializer.is_valid():
+            expense = serializer.save(booking=booking)
+            return Response({
+                "message": "Expense added successfully",
+                "expense": BookingExpenseSerializer(expense).data,
+                "total_expense": booking.total_expense,
+                "profit_amount": booking.profit_amount,
+            }, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=400)
+
 class BookingUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -124,7 +144,7 @@ class BookingCalendarView(APIView):
         bookings = Booking.objects.filter(
             vendor=vendor,
             is_deleted=False
-        ).prefetch_related("dates__slots")
+        ).prefetch_related("dates__slots", "payments", "expenses")
 
         calendar = defaultdict(list)
 
@@ -139,6 +159,8 @@ class BookingCalendarView(APIView):
                     "total_amount": float(booking.total_amount),
                     "paid_amount": float(booking.total_paid),
                     "balance_amount": float(booking.balance_amount),
+                    "expense_amount": float(booking.total_expense),
+                    "profit_amount": float(booking.profit_amount),
                     "payment_status": booking.payment_status,
 
                     # event info
