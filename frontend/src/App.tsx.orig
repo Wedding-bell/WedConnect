@@ -6,7 +6,6 @@ import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminVendors } from "./pages/admin/AdminVendors";
 import { AdminCategories } from "./pages/admin/AdminCategories";
 import { AdminLayout } from "./components/layout/AdminLayout";
-import { VendorLayout } from "./components/layout/VendorLayout";
 import { VendorLogin } from "./pages/vendor/VendorLogin";
 import { VendorForgotPassword } from "./pages/vendor/VendorForgotPassword";
 import { VendorResetPassword } from "./pages/vendor/VendorResetPassword";
@@ -39,7 +38,7 @@ function App() {
         <Route path="/vendor/forgot-password" element={<VendorForgotPassword />} />
         <Route path="/reset-password/:uid/:token" element={<VendorResetPassword />} />
         <Route path="/vendor" element={<VendorLayout />}>
-          <Route path="dashboard" element={<VendorDashboard />} />
+          <Route path="dashboard" element={<PlaceholderPage title="Vendor Overview Dashboard" />} />
           <Route path="bookings" element={<VendorBookings />} />
           <Route path="calendar" element={<VendorCalendar />} />
           <Route path="settings" element={<PlaceholderPage title="Profile Settings" />} />

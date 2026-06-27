@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "../../components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "../../components/ui/input";
 import { vendorLogin } from "../../api/vendorAuth";
 
 export function VendorLogin() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
