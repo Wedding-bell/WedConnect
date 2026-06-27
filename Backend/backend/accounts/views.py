@@ -27,7 +27,6 @@ class AdminLoginView(APIView):
 
     def post(self, request):
         serializer = AdminLoginSerializer(data=request.data)
-
         if serializer.is_valid():
             user = serializer.validated_data["user"]
             tokens = get_tokens_for_user(user)

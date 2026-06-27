@@ -3,8 +3,9 @@ import type { Vendor, Category, District, CreateVendorPayload } from "../types";
 
 export async function getVendors(): Promise<Vendor[]> {
   const { data } = await apiClient.get("/api/v1/vendors/vendors/");
-  return data;
+  return data.results ?? [];
 }
+
 
 // Additional functions for Vendor ops
 export async function activateVendor(id: number) {
@@ -19,6 +20,16 @@ export async function deactivateVendor(id: number) {
 
 export async function getCategories(): Promise<Category[]> {
   const { data } = await apiClient.get("/api/v1/vendors/categories/");
+  return data;
+}
+
+export async function createCategory(payload: { name: string }) {
+  const { data } = await apiClient.post("/api/v1/vendors/categories/", payload);
+  return data;
+}
+
+export async function deleteCategory(id: number) {
+  const { data } = await apiClient.delete(`/api/v1/vendors/categories/${id}/`);
   return data;
 }
 

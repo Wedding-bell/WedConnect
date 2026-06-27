@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { getVendors, getCategories, getDistricts, createVendor } from "../../api/adminVendors";
-import type { Vendor, Category, District, CreateVendorPayload } from "../../types";
+import { getVendors, getCategories, createVendor } from "../../api/adminVendors";
+import type { Vendor, Category, CreateVendorPayload } from "../../types";
 import { Search, Plus, MoreVertical, CheckCircle2, XCircle, Users } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -14,7 +14,6 @@ export function AdminVendors() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [districts, setDistricts] = useState<District[]>([]);
 
   useEffect(() => {
     fetchVendors();
@@ -23,9 +22,8 @@ export function AdminVendors() {
 
   const fetchFormOptions = async () => {
     try {
-      const [cats, dists] = await Promise.all([getCategories(), getDistricts()]);
+      const cats = await getCategories();
       setCategories(cats || []);
-      setDistricts(dists || []);
     } catch (err) {
       console.error("Failed to load form options", err);
     }
@@ -187,7 +185,6 @@ export function AdminVendors() {
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreateVendor}
         categories={categories}
-        districts={districts}
       />
     </div>
   );

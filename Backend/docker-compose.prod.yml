@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # The Django Web Application
+  web:
+    build:
+      context: ./
+      dockerfile: docker/Dockerfile
+    container_name: wedconnect_api
+    # Expose port 8000 for the Host Nginx to proxy to
+    ports:
+      - "8000:8000"
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --threads 2 --timeout 60
+    env_file:
+      - .env.prod
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/mediafiles
+    restart: always
+
+  # Redis for Caching and Celery
+  redis:
+    image: redis:7-alpine
+    container_name: wedconnect_redis
+    restart: always
+
+  # Celery Worker for background tasks
+  celery_worker:
+    build:
+      context: ./
+      dockerfile: docker/Dockerfile
+    container_name: wedconnect_worker
+    command: celery -A config worker --loglevel=info --concurrency=1
+    env_file:
+      - .env.prod
+    depends_on:
+      - redis
+    restart: always
+
+volumes:
+  static_volume:
+  media_volume:

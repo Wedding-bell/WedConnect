@@ -4,7 +4,8 @@ import type { Booking, CreateBookingPayload } from "../types";
 export async function getBookings(filter?: "today" | "upcoming" | "past"): Promise<Booking[]> {
   const params = filter ? { type: filter } : {};
   const { data } = await apiClient.get("/api/v1/bookings/list/", { params });
-  return data;
+  // Handle paginated response
+  return Array.isArray(data) ? data : data.results || [];
 }
 
 export async function getCalendar(): Promise<Record<string, CalendarEntry[]>> {

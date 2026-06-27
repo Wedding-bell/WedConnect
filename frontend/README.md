@@ -46,4 +46,4 @@ Output is in `dist/`.
 - `src/pages/` – Route-level pages
 - `src/hooks/` – Custom hooks (e.g. `useApi`)
 - `src/types/` – Shared TypeScript types
-- `src/lib/utils.ts` – Utilities (e.g. `cn` for class names)
+- `src/lib/utils.ts` – Utilities (e.g. `cn` for class names) 
