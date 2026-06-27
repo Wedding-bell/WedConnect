@@ -270,9 +270,12 @@ class VendorForgotPasswordView(APIView):
     def post(self, request):
         email = request.data.get("email")
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
+        user = User.objects.filter(
+            email=email,
+            vendor_profile__isnull=False,
+        ).first()
+
+        if user is None:
             return Response(
                 {"message": "If this email exists, a reset link has been sent."},
                 status=200,
@@ -281,19 +284,28 @@ class VendorForgotPasswordView(APIView):
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
 
-        reset_link = f"http://localhost:3000/reset-password/{uid}/{token}/"
+        frontend_base_url = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173").rstrip("/")
+        reset_link = f"{frontend_base_url}/reset-password/{uid}/{token}"
 
-        send_mail(
-            subject="Reset Your Password",
-            message=f"Click the link to reset your password:\n{reset_link}",
-            from_email=os.getenv("DEFAULT_FROM_EMAIL"),
-            recipient_list=[email],
-        )
+        try:
+            send_mail(
+                subject="Reset Your WedConnect Password",
+                message=f"Click the link to reset your password:\n{reset_link}",
+                from_email=os.getenv("DEFAULT_FROM_EMAIL"),
+                recipient_list=[email],
+                fail_silently=False,
+            )
+        except Exception:
+            return Response(
+                {"error": "Unable to send reset email right now. Please try again later."},
+                status=500,
+            )
 
         return Response(
-            {"message": "Password reset link sent to email."},
+            {"message": "If this email exists, a reset link has been sent."},
             status=200,
         )
+
     
 
 
