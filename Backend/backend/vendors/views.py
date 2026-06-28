@@ -285,7 +285,7 @@ class VendorForgotPasswordView(APIView):
         token = default_token_generator.make_token(user)
 
         frontend_base_url = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173").rstrip("/")
-        reset_link = f"{frontend_base_url}/reset-password/{uid}/{token}"
+        reset_link = f"{frontend_base_url}/vendors/reset-password/{uid}/{token}"
 
         try:
             send_mail(

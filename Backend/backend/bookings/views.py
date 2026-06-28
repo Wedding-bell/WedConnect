@@ -64,6 +64,117 @@ class VendorBookingListView(ListAPIView):
 
         
         return qs.distinct().order_by("-created_at")
+
+
+class VendorDashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        vendor = request.user.vendor_profile
+        today = date.today()
+
+        try:
+            year = int(request.query_params.get("year", today.year))
+        except (TypeError, ValueError):
+            year = today.year
+
+        try:
+            month = int(request.query_params.get("month", today.month))
+        except (TypeError, ValueError):
+            month = today.month
+
+        month = min(max(month, 1), 12)
+
+        bookings = Booking.objects.filter(
+            vendor=vendor,
+            is_deleted=False,
+        ).prefetch_related("dates", "payments", "expenses").order_by("-created_at")
+
+        def amount(value):
+            return float(value or 0)
+
+        def primary_date(booking):
+            event_dates = [booking_date.event_date for booking_date in booking.dates.all()]
+            if event_dates:
+                return min(event_dates)
+            return booking.created_at.date()
+
+        totals = {
+            "bookings": 0,
+            "revenue": 0,
+            "received": 0,
+            "expenses": 0,
+            "profit": 0,
+            "pending_balance": 0,
+            "today": 0,
+            "upcoming": 0,
+            "past": 0,
+        }
+
+        current_month = {
+            "bookings": 0,
+            "revenue": 0,
+            "received": 0,
+            "expenses": 0,
+            "profit": 0,
+            "pending_balance": 0,
+        }
+
+        monthly = {
+            m: {
+                "month": m,
+                "bookings": 0,
+                "revenue": 0,
+                "received": 0,
+                "expenses": 0,
+                "profit": 0,
+                "pending_balance": 0,
+            }
+            for m in range(1, 13)
+        }
+
+        for booking in bookings:
+            booking_date = primary_date(booking)
+            booking_values = {
+                "revenue": amount(booking.total_amount),
+                "received": amount(booking.total_paid),
+                "expenses": amount(booking.total_expense),
+                "profit": amount(booking.profit_amount),
+                "pending_balance": amount(booking.balance_amount),
+            }
+
+            totals["bookings"] += 1
+            for key, value in booking_values.items():
+                totals[key] += value
+
+            if booking.event_status == "TODAY":
+                totals["today"] += 1
+            elif booking.event_status == "UPCOMING":
+                totals["upcoming"] += 1
+            elif booking.event_status == "PAST":
+                totals["past"] += 1
+
+            if booking_date.year == year:
+                month_data = monthly[booking_date.month]
+                month_data["bookings"] += 1
+                for key, value in booking_values.items():
+                    month_data[key] += value
+
+            if booking_date.year == year and booking_date.month == month:
+                current_month["bookings"] += 1
+                for key, value in booking_values.items():
+                    current_month[key] += value
+
+        recent = BookingListSerializer(bookings[:5], many=True).data
+
+        return Response({
+            "year": year,
+            "month": month,
+            "totals": totals,
+            "current_month": current_month,
+            "monthly": list(monthly.values()),
+            "recent_bookings": recent,
+        })
     
 class AddPaymentView(APIView):
     permission_classes = [IsAuthenticated]

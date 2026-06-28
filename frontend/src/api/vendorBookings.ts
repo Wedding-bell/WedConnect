@@ -13,6 +13,11 @@ export async function getCalendar(): Promise<Record<string, CalendarEntry[]>> {
   return data;
 }
 
+export async function getDashboardOverview(params?: { year?: number; month?: number }): Promise<DashboardOverview> {
+  const { data } = await apiClient.get("/api/v1/bookings/dashboard/", { params });
+  return data;
+}
+
 export async function createBooking(payload: CreateBookingPayload) {
   const { data } = await apiClient.post("/api/v1/bookings/create/", payload);
   return data;
@@ -41,4 +46,29 @@ export interface CalendarEntry {
   payment_status: "NOT_PAID" | "PARTIAL" | "PAID";
   event_status: "TODAY" | "UPCOMING" | "PAST" | "UNKNOWN";
   slots: { start_time: string; end_time: string }[];
+}
+
+export interface DashboardTotals {
+  bookings: number;
+  revenue: number;
+  received: number;
+  expenses: number;
+  profit: number;
+  pending_balance: number;
+  today?: number;
+  upcoming?: number;
+  past?: number;
+}
+
+export interface DashboardMonth extends DashboardTotals {
+  month: number;
+}
+
+export interface DashboardOverview {
+  year: number;
+  month: number;
+  totals: DashboardTotals;
+  current_month: DashboardTotals;
+  monthly: DashboardMonth[];
+  recent_bookings: Booking[];
 }
