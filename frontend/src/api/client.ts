@@ -14,7 +14,10 @@ export const apiClient = axios.create({
 
 function isVendorRequest(url?: string) {
   if (!url) return window.location.pathname.startsWith("/vendor");
-  return url.includes("/api/v1/vendors/") || url.includes("/api/v1/bookings/");
+  return (
+    url.includes("/api/v1/bookings/") ||
+    url.includes("/api/v1/vendors/vendors/me/")
+  );
 }
 
 function isPublicAuthRequest(url?: string) {
