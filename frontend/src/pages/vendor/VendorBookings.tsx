@@ -1,68 +1,111 @@
-import { useEffect, useState, useMemo } from "react";
-import { Plus, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Clock, Calendar, List } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  AlertCircle,
+  Calendar,
+  CheckCircle2,
+  ChevronDown,
+  IndianRupee,
+  MessageCircle,
+  Phone,
+  Plus,
+  Receipt,
+  TrendingUp,
+} from "lucide-react";
 import { Button } from "../../components/ui/button";
-import { getBookings, getCalendar, createBooking } from "../../api/vendorBookings";
-import type { CalendarEntry } from "../../api/vendorBookings";
+import { getBookings, createBooking, addExpense } from "../../api/vendorBookings";
 import { getDistricts } from "../../api/adminVendors";
 import { CreateBookingModal } from "../../components/vendor/CreateBookingModal";
-import type { Booking, District, CreateBookingPayload } from "../../types";
-
-type ViewMode = "calendar" | "list";
-
-const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+import type { Booking, District, CreateBookingExpensePayload, CreateBookingPayload } from "../../types";
 
 function PaymentBadge({ status }: { status: Booking["payment_status"] }) {
   const config = {
-    PAID: { color: "bg-green-50 text-green-700 border-green-200", label: "Paid", icon: CheckCircle2 },
+    PAID: { color: "bg-emerald-50 text-emerald-700 border-emerald-200", label: "Paid", icon: CheckCircle2 },
     PARTIAL: { color: "bg-amber-50 text-amber-700 border-amber-200", label: "Partial", icon: AlertCircle },
-    NOT_PAID: { color: "bg-red-50 text-red-600 border-red-200", label: "Unpaid", icon: AlertCircle },
+    NOT_PAID: { color: "bg-rose-50 text-rose-700 border-rose-200", label: "Unpaid", icon: AlertCircle },
   }[status];
   const Icon = config.icon;
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${config.color}`}>
-      <Icon className="w-3 h-3" /> {config.label}
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${config.color}`}>
+      <Icon className="h-3 w-3" /> {config.label}
     </span>
   );
 }
 
 function EventBadge({ status }: { status: Booking["event_status"] }) {
   const config = {
-    TODAY: { color: "bg-blue-50 text-blue-700 border-blue-200", label: "Today" },
-    UPCOMING: { color: "bg-violet-50 text-violet-700 border-violet-200", label: "Upcoming" },
-    PAST: { color: "bg-zinc-100 text-zinc-600 border-zinc-200", label: "Past" },
-    UNKNOWN: { color: "bg-zinc-100 text-zinc-500 border-zinc-200", label: "Unknown" },
+    TODAY: "bg-sky-50 text-sky-700 border-sky-200",
+    UPCOMING: "bg-violet-50 text-violet-700 border-violet-200",
+    PAST: "bg-slate-100 text-slate-600 border-slate-200",
+    UNKNOWN: "bg-slate-100 text-slate-500 border-slate-200",
   }[status];
+  const label = { TODAY: "Today", UPCOMING: "Upcoming", PAST: "Past", UNKNOWN: "Unknown" }[status];
+  return <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${config}`}>{label}</span>;
+}
+
+const todayIso = () => new Date().toISOString().split("T")[0];
+
+const emptyExpenseForm = (): CreateBookingExpensePayload => ({
+  title: "",
+  amount: 0,
+  note: "",
+  spent_at: todayIso(),
+});
+
+function formatCurrency(value: string | number | undefined) {
+  return `₹${Number(value || 0).toLocaleString("en-IN")}`;
+}
+
+function phoneDigits(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  return digits.length === 10 ? `91${digits}` : digits;
+}
+
+function getWhatsAppHref(booking: Booking) {
+  const message = encodeURIComponent(`Hi ${booking.customer_name}, this is regarding your booking with us.`);
+  return `https://wa.me/${phoneDigits(booking.phone_number)}?text=${message}`;
+}
+
+function StatLine({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${config.color}`}>
-      {config.label}
-    </span>
+    <div className="flex items-center justify-between border-b border-slate-100 py-2 last:border-0">
+      <span className="text-xs font-medium text-slate-400">{label}</span>
+      <span className={`text-sm font-bold ${tone ?? "text-slate-950"}`}>{value}</span>
+    </div>
+  );
+}
+
+function BookingSkeleton() {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+      <div className="h-4 w-32 animate-pulse rounded bg-slate-100" />
+      <div className="mt-3 h-3 w-24 animate-pulse rounded bg-slate-100" />
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <div className="h-14 animate-pulse rounded-lg bg-slate-100" />
+        <div className="h-14 animate-pulse rounded-lg bg-slate-100" />
+      </div>
+    </div>
   );
 }
 
 export function VendorBookings() {
-  const today = new Date();
-  const [viewMode, setViewMode] = useState<ViewMode>("calendar");
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [calendarData, setCalendarData] = useState<Record<string, CalendarEntry[]>>({});
   const [loading, setLoading] = useState(true);
   const [districts, setDistricts] = useState<District[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
-  const [currentYear, setCurrentYear] = useState(today.getFullYear());
+  const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null);
+  const [expenseForms, setExpenseForms] = useState<Record<number, CreateBookingExpensePayload>>({});
+  const [savingExpenseId, setSavingExpenseId] = useState<number | null>(null);
 
   useEffect(() => {
-    fetchAll();
+    fetchData();
     getDistricts().then(setDistricts).catch(console.error);
   }, []);
 
-  const fetchAll = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const [bookingsData, calData] = await Promise.all([getBookings(), getCalendar()]);
+      const bookingsData = await getBookings();
       setBookings(bookingsData || []);
-      setCalendarData(calData || {});
     } catch (err) {
       console.error("Failed to load bookings:", err);
     } finally {
@@ -72,206 +115,196 @@ export function VendorBookings() {
 
   const handleCreateBooking = async (payload: CreateBookingPayload) => {
     await createBooking(payload);
-    fetchAll();
+    fetchData();
   };
 
-  // Calendar calculation
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+  const getExpenseForm = (bookingId: number) => expenseForms[bookingId] ?? emptyExpenseForm();
 
-  const calendarDays = useMemo(() => {
-    const days = [];
-    for (let i = 0; i < firstDayOfMonth; i++) days.push(null);
-    for (let d = 1; d <= daysInMonth; d++) days.push(d);
-    return days;
-  }, [currentMonth, currentYear, firstDayOfMonth, daysInMonth]);
-
-  const dateKey = (d: number) => {
-    const mm = String(currentMonth + 1).padStart(2, "0");
-    const dd = String(d).padStart(2, "0");
-    return `${currentYear}-${mm}-${dd}`;
+  const updateExpenseForm = (bookingId: number, patch: Partial<CreateBookingExpensePayload>) => {
+    setExpenseForms((forms) => ({
+      ...forms,
+      [bookingId]: { ...(forms[bookingId] ?? emptyExpenseForm()), ...patch },
+    }));
   };
 
-  const prevMonth = () => {
-    if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1); }
-    else setCurrentMonth(m => m - 1);
-  };
-  const nextMonth = () => {
-    if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(y => y + 1); }
-    else setCurrentMonth(m => m + 1);
-  };
+  const handleAddExpense = async (bookingId: number) => {
+    const form = getExpenseForm(bookingId);
+    if (!form.title.trim() || !form.amount) return;
 
-  const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
-  const selectedEntries = selectedDate ? (calendarData[selectedDate] || []) : [];
+    setSavingExpenseId(bookingId);
+    try {
+      await addExpense(bookingId, { ...form, title: form.title.trim() });
+      setExpenseForms((forms) => ({ ...forms, [bookingId]: emptyExpenseForm() }));
+      await fetchData();
+    } catch (err) {
+      console.error("Failed to add expense:", err);
+    } finally {
+      setSavingExpenseId(null);
+    }
+  };
 
   return (
-    <div className="space-y-4 sm:space-y-6 pb-20 lg:pb-0">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-semibold text-stone-900 tracking-tight">Bookings</h2>
-          <p className="text-xs sm:text-sm text-stone-500 hidden sm:block">Track events, manage clients and monitor payments.</p>
+    <div className="space-y-4 pb-24 lg:pb-2">
+      <section className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-rose-500">Bookings</p>
+          <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">Clients & events</h2>
         </div>
-        <div className="flex items-center gap-2">
-          {/* View Toggle */}
-          <div className="flex items-center bg-stone-100 rounded-lg p-1">
-            <button onClick={() => setViewMode("calendar")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === "calendar" ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-700"}`}>
-              <Calendar className="w-4 h-4" /> Calendar
-            </button>
-            <button onClick={() => setViewMode("list")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === "list" ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-700"}`}>
-              <List className="w-4 h-4" /> List
-            </button>
-          </div>
-          <Button onClick={() => setIsModalOpen(true)}
-            className="bg-stone-900 hover:bg-stone-800 text-white px-4 h-10 rounded-xl sm:rounded-md flex items-center gap-2 shadow-sm text-sm">
-            <Plus className="w-4 h-4" /> New Booking
-          </Button>
+        <Button
+          onClick={() => setIsModalOpen(true)}
+          className="h-11 shrink-0 rounded-lg bg-slate-950 px-4 text-white hover:bg-slate-800"
+        >
+          <Plus className="mr-2 h-4 w-4" /> New
+        </Button>
+      </section>
+
+      {loading ? (
+        <div className="grid gap-3 lg:grid-cols-2">
+          {[1, 2, 3, 4].map((item) => <BookingSkeleton key={item} />)}
         </div>
-      </div>
+      ) : bookings.length > 0 ? (
+        <div className="grid gap-3 xl:grid-cols-2">
+          {bookings.map((booking) => {
+            const isOpen = selectedBookingId === booking.id;
+            const form = getExpenseForm(booking.id);
+            const firstDate = booking.dates?.[0]?.event_date;
 
-      {/* CALENDAR VIEW */}
-      {viewMode === "calendar" && (
-        <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
-            {/* Month navigation */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
-              <button onClick={prevMonth} className="p-2 hover:bg-stone-100 rounded-full transition-colors">
-                <ChevronLeft className="w-5 h-5 text-stone-600" />
-              </button>
-              <h3 className="text-base font-semibold text-stone-900">{MONTHS[currentMonth]} {currentYear}</h3>
-              <button onClick={nextMonth} className="p-2 hover:bg-stone-100 rounded-full transition-colors">
-                <ChevronRight className="w-5 h-5 text-stone-600" />
-              </button>
-            </div>
-
-            {/* Day headers */}
-            <div className="grid grid-cols-7 border-b border-stone-100">
-              {DAYS.map(d => (
-                <div key={d} className="py-2 text-center text-[10px] sm:text-xs font-semibold text-stone-400 uppercase tracking-wider">{d}</div>
-              ))}
-            </div>
-
-            {/* Calendar grid */}
-            <div className="grid grid-cols-7">
-              {calendarDays.map((day, i) => {
-                if (!day) return <div key={`empty-${i}`} className="h-12 sm:h-16 border-b border-r border-stone-50" />;
-                const key = dateKey(day);
-                const events = calendarData[key] || [];
-                const isToday = key === todayKey;
-                const isSelected = key === selectedDate;
-
-                return (
-                  <button key={key} onClick={() => setSelectedDate(isSelected ? null : key)}
-                    className={`h-12 sm:h-16 p-1 sm:p-2 border-b border-r border-stone-50 flex flex-col transition-colors relative ${isSelected ? "bg-stone-900" : isToday ? "bg-stone-50" : "hover:bg-stone-50"}`}>
-                    <span className={`text-xs sm:text-sm font-medium self-end leading-none ${isSelected ? "text-white" : isToday ? "text-stone-900 font-bold" : "text-stone-700"}`}>{day}</span>
-                    {events.length > 0 && (
-                      <div className="mt-auto flex gap-0.5 flex-wrap">
-                        {events.slice(0, 3).map((_, ei) => (
-                          <div key={ei} className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white/70" : "bg-stone-700"}`} />
-                        ))}
-                        {events.length > 3 && <span className={`text-[8px] leading-none ${isSelected ? "text-white/60" : "text-stone-400"}`}>+{events.length - 3}</span>}
+            return (
+              <article key={booking.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/50">
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="truncate text-base font-bold text-slate-950">{booking.customer_name}</h3>
+                        <EventBadge status={booking.event_status} />
                       </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                      <p className="mt-1 text-sm text-slate-400">{firstDate ?? "Date pending"}</p>
+                    </div>
+                    <PaymentBadge status={booking.payment_status} />
+                  </div>
 
-          {/* Selected date detail panel */}
-          {selectedDate && (
-            <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5">
-              <h4 className="font-semibold text-stone-900 mb-3">
-                {new Date(selectedDate + "T00:00:00").toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-              </h4>
-              {selectedEntries.length === 0 ? (
-                <p className="text-sm text-stone-400">No bookings on this day.</p>
-              ) : (
-                <div className="space-y-3">
-                  {selectedEntries.map(entry => (
-                    <div key={entry.booking_id} className="flex items-start justify-between py-3 border-b border-stone-100 last:border-0">
-                      <div>
-                        <p className="font-medium text-stone-900">{entry.customer_name}</p>
-                        <p className="text-sm text-stone-500">{entry.phone_number}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          {entry.slots.map((s, i) => (
-                            <span key={i} className="inline-flex items-center gap-1 text-xs text-stone-500">
-                              <Clock className="w-3 h-3" /> {s.start_time} – {s.end_time}
-                            </span>
-                          ))}
-                        </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="rounded-lg bg-sky-50 p-3">
+                      <p className="text-[11px] font-semibold uppercase text-sky-600">Revenue</p>
+                      <p className="mt-1 text-lg font-bold text-slate-950">{formatCurrency(booking.total_amount)}</p>
+                    </div>
+                    <div className="rounded-lg bg-emerald-50 p-3">
+                      <p className="text-[11px] font-semibold uppercase text-emerald-600">Profit</p>
+                      <p className="mt-1 text-lg font-bold text-slate-950">{formatCurrency(booking.profit_amount)}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-2">
+                    <a
+                      href={`tel:${booking.phone_number}`}
+                      className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700"
+                    >
+                      <Phone className="h-4 w-4" /> Call
+                    </a>
+                    <a
+                      href={getWhatsAppHref(booking)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-600 text-sm font-semibold text-white"
+                    >
+                      <MessageCircle className="h-4 w-4" /> WhatsApp
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedBookingId(isOpen ? null : booking.id)}
+                      className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-500"
+                      aria-label="Toggle details"
+                    >
+                      <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                    </button>
+                  </div>
+                </div>
+
+                {isOpen && (
+                  <div className="border-t border-slate-100 bg-slate-50/70 p-4">
+                    <div className="rounded-lg bg-white px-3 py-1">
+                      <StatLine label="Received" value={formatCurrency(booking.total_paid)} />
+                      <StatLine label="Balance" value={formatCurrency(booking.balance_amount)} />
+                      <StatLine label="Expenses" value={formatCurrency(booking.total_expense)} tone="text-rose-600" />
+                      <StatLine label="Profit" value={formatCurrency(booking.profit_amount)} tone="text-emerald-700" />
+                    </div>
+
+                    <div className="mt-4">
+                      <div className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-950">
+                        <Receipt className="h-4 w-4 text-rose-500" /> Expenses
                       </div>
-                      <div className="text-right space-y-1.5 flex-shrink-0 ml-4">
-                        <p className="font-semibold text-stone-900 text-sm">₹{entry.total_amount.toLocaleString()}</p>
-                        <PaymentBadge status={entry.payment_status} />
+                      <div className="space-y-2">
+                        {booking.expenses?.length ? booking.expenses.map((expense) => (
+                          <div key={expense.id} className="flex items-start justify-between gap-3 rounded-lg bg-white px-3 py-2">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-slate-800">{expense.title}</p>
+                              <p className="text-xs text-slate-400">{expense.spent_at}{expense.note ? ` · ${expense.note}` : ""}</p>
+                            </div>
+                            <p className="shrink-0 text-sm font-bold text-slate-950">{formatCurrency(expense.amount)}</p>
+                          </div>
+                        )) : (
+                          <p className="rounded-lg bg-white px-3 py-3 text-sm text-slate-400">No expenses added yet.</p>
+                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* LIST VIEW */}
-      {viewMode === "list" && (
-        <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-[10px] sm:text-xs text-stone-500 uppercase bg-stone-50 border-b border-stone-200">
-                <tr>
-                  <th className="px-4 sm:px-6 py-3 font-medium">Client</th>
-                  <th className="px-4 sm:px-6 py-3 font-medium hidden sm:table-cell">Event</th>
-                  <th className="px-4 sm:px-6 py-3 font-medium">Amount</th>
-                  <th className="px-4 sm:px-6 py-3 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {loading ? (
-                  [...Array(4)].map((_, i) => (
-                    <tr key={i} className="animate-pulse">
-                      <td className="px-4 sm:px-6 py-4"><div className="h-4 bg-stone-100 rounded w-3/4" /></td>
-                      <td className="px-4 sm:px-6 py-4 hidden sm:table-cell"><div className="h-4 bg-stone-100 rounded w-20" /></td>
-                      <td className="px-4 sm:px-6 py-4"><div className="h-4 bg-stone-100 rounded w-16" /></td>
-                      <td className="px-4 sm:px-6 py-4"><div className="h-5 bg-stone-100 rounded-full w-14" /></td>
-                    </tr>
-                  ))
-                ) : bookings.length > 0 ? (
-                  bookings.map(b => (
-                    <tr key={b.id} className="hover:bg-stone-50 transition-colors cursor-pointer">
-                      <td className="px-4 sm:px-6 py-4">
-                        <p className="font-medium text-stone-900">{b.customer_name}</p>
-                        <p className="text-xs text-stone-400">{b.phone_number}</p>
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 hidden sm:table-cell">
-                        <div className="space-y-1">
-                          <EventBadge status={b.event_status} />
-                          {b.dates?.[0] && <p className="text-xs text-stone-400">{b.dates[0].event_date}</p>}
+                    <div className="mt-4 space-y-2 rounded-lg bg-white p-3">
+                      <div className="flex items-center gap-2 text-sm font-bold text-slate-950">
+                        <TrendingUp className="h-4 w-4 text-emerald-600" /> Add expense
+                      </div>
+                      <input
+                        className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-slate-400 focus:bg-white"
+                        placeholder="Travel, products, helper fee"
+                        value={form.title}
+                        onChange={(e) => updateExpenseForm(booking.id, { title: e.target.value })}
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="relative">
+                          <IndianRupee className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="number"
+                            min="0"
+                            className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm outline-none focus:border-slate-400 focus:bg-white"
+                            placeholder="Amount"
+                            value={form.amount || ""}
+                            onChange={(e) => updateExpenseForm(booking.id, { amount: Number(e.target.value) })}
+                          />
                         </div>
-                      </td>
-                      <td className="px-4 sm:px-6 py-4">
-                        <p className="font-semibold text-stone-900">₹{Number(b.total_amount).toLocaleString()}</p>
-                        <p className="text-xs text-stone-400">Bal: ₹{Number(b.balance_amount).toLocaleString()}</p>
-                      </td>
-                      <td className="px-4 sm:px-6 py-4">
-                        <PaymentBadge status={b.payment_status} />
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center">
-                      <Calendar className="w-10 h-10 mx-auto text-stone-200 mb-3" />
-                      <p className="text-stone-400 text-sm">No bookings yet. Create your first one!</p>
-                    </td>
-                  </tr>
+                        <input
+                          type="date"
+                          className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-slate-400 focus:bg-white"
+                          value={form.spent_at}
+                          onChange={(e) => updateExpenseForm(booking.id, { spent_at: e.target.value })}
+                        />
+                      </div>
+                      <textarea
+                        className="h-20 w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-400 focus:bg-white"
+                        placeholder="Optional note"
+                        value={form.note ?? ""}
+                        onChange={(e) => updateExpenseForm(booking.id, { note: e.target.value })}
+                      />
+                      <Button
+                        type="button"
+                        disabled={savingExpenseId === booking.id || !form.title.trim() || !form.amount}
+                        onClick={() => handleAddExpense(booking.id)}
+                        className="h-11 w-full rounded-lg bg-slate-950 text-white hover:bg-slate-800"
+                      >
+                        {savingExpenseId === booking.id ? "Saving..." : "Add expense"}
+                      </Button>
+                    </div>
+                  </div>
                 )}
-              </tbody>
-            </table>
-          </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm shadow-slate-200/50">
+          <Calendar className="mx-auto h-10 w-10 text-rose-300" />
+          <p className="mt-3 text-base font-bold text-slate-900">No bookings yet</p>
+          <Button onClick={() => setIsModalOpen(true)} className="mt-4 h-11 rounded-lg bg-slate-950 px-5 text-white hover:bg-slate-800">
+            <Plus className="mr-2 h-4 w-4" /> Add booking
+          </Button>
         </div>
       )}
 

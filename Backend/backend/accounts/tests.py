@@ -143,9 +143,11 @@ class AccountsTests(APITestCase):
 
         self.assertEqual(res.status_code, 400)
 
-    def test_logout_without_auth(self):
+    def test_logout_with_refresh_only(self):
+        refresh = RefreshToken.for_user(self.admin)
+
         res = self.client.post(self.logout_url, {
-            "refresh": "somevalue"
+            "refresh": str(refresh)
         })
 
-        self.assertIn(res.status_code, [401, 403])
+        self.assertEqual(res.status_code, 205)

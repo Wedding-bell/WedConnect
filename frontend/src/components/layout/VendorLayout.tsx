@@ -1,31 +1,53 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
-import { 
-  Home, 
-  BookOpen, 
-  Calendar, 
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import {
+  Home,
+  BookOpen,
+  Calendar,
   Settings as SettingsIcon,
-  Bell
+  Bell,
+  LogOut,
+  Sparkles,
 } from "lucide-react";
+import { vendorLogout } from "../../api/vendorAuth";
 
 export function VendorLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await vendorLogout();
+    } catch (e) {
+      console.error("Vendor logout error", e);
+    } finally {
+      localStorage.removeItem("vendor_access_token");
+      localStorage.removeItem("vendor_refresh_token");
+      localStorage.removeItem("active_role");
+      navigate("/vendor/login");
+    }
+  };
 
   const navItems = [
-    { name: "Overview", href: "/vendor/dashboard", icon: Home },
+    { name: "Home", href: "/vendor/dashboard", icon: Home },
     { name: "Bookings", href: "/vendor/bookings", icon: BookOpen },
     { name: "Calendar", href: "/vendor/calendar", icon: Calendar },
     { name: "Settings", href: "/vendor/settings", icon: SettingsIcon },
   ];
 
   return (
-    <div className="flex h-[100dvh] bg-stone-50 overflow-hidden font-sans">
-      
-      {/* Desktop Sidebar (Vendor Theme) */}
-      <aside className="hidden lg:flex w-64 bg-stone-900 text-stone-300 flex-col">
-        <div className="h-20 flex items-center px-8 border-b border-stone-800 font-bold text-xl tracking-tight text-white">
-          VENDOR HUB
+    <div className="flex h-[100dvh] overflow-hidden bg-[#f7f7fb] font-sans text-slate-950">
+      <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">
+        <div className="flex h-20 items-center gap-3 border-b border-slate-100 px-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-100 text-rose-700">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-sm font-bold tracking-wide text-slate-950">WedConnect</p>
+            <p className="text-xs text-slate-400">Vendor Hub</p>
+          </div>
         </div>
-        <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
+
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-5">
           {navItems.map((item) => {
             const isActive = location.pathname.startsWith(item.href);
             const Icon = item.icon;
@@ -33,77 +55,82 @@ export function VendorLayout() {
               <Link
                 key={item.name}
                 to={item.href}
-                className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors relative ${
-                  isActive 
-                    ? "bg-white/10 text-white" 
-                    : "text-stone-400 hover:bg-white/5 hover:text-stone-200"
+                className={`flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-semibold transition-colors ${
+                  isActive
+                    ? "bg-slate-950 text-white shadow-sm"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-950"
                 }`}
               >
-                <Icon className={`w-5 h-5 mr-4 ${isActive ? "text-white" : "text-stone-400"}`} />
+                <Icon className="h-4 w-4" />
                 {item.name}
-                {isActive && (
-                  <div className="absolute left-0 w-1 h-8 bg-white rounded-r-full" />
-                )}
               </Link>
             );
           })}
         </nav>
-        <div className="p-4 border-t border-stone-800">
-          <div className="flex items-center space-x-3">
-             <div className="w-10 h-10 rounded-full bg-stone-800 flex items-center justify-center text-white font-bold">V</div>
-             <div>
-               <p className="text-sm font-medium text-white">Your Business</p>
-               <p className="text-xs text-stone-400">vendor@email.com</p>
-             </div>
+
+        <div className="border-t border-slate-100 p-4">
+          <div className="mb-3 rounded-lg bg-slate-50 p-3">
+            <p className="text-sm font-semibold text-slate-900">Your Business</p>
+            <p className="text-xs text-slate-400">vendor@email.com</p>
           </div>
+          <button
+            onClick={handleLogout}
+            className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-semibold text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
+          >
+            <LogOut className="h-4 w-4" />
+            Log out
+          </button>
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-[100dvh] w-full pb-16 lg:pb-0 relative">
-        
-        {/* Top Header */}
-        <header className="h-16 lg:h-20 bg-white border-b border-stone-200 flex items-center justify-between px-4 lg:px-8 shadow-sm z-10">
-          <h1 className="text-xl lg:text-2xl font-semibold text-stone-900 hidden sm:block">Dashboard</h1>
-          <span className="font-bold text-lg tracking-tight text-stone-900 sm:hidden">
-            VENDOR HUB
-          </span>
-          
-          <div className="flex items-center space-x-2 sm:space-x-6">
-            <button className="p-2 rounded-full bg-stone-100 text-stone-600 hover:text-stone-900 relative">
-              <Bell className="w-5 h-5" />
-            </button>
-            <div className="w-8 h-8 sm:h-10 sm:w-10 rounded-full overflow-hidden border border-stone-200 shrink-0 lg:hidden">
-               <div className="w-full h-full bg-stone-900 flex items-center justify-center text-white font-bold text-sm">V</div>
+      <div className="relative flex h-[100dvh] min-w-0 flex-1 flex-col pb-20 lg:pb-0">
+        <header className="sticky top-0 z-30 border-b border-white/70 bg-white/85 px-4 py-3 shadow-sm shadow-slate-200/40 backdrop-blur lg:px-8 lg:py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-rose-500 lg:hidden">WedConnect</p>
+              <h1 className="truncate text-lg font-bold text-slate-950 lg:text-2xl">Vendor Hub</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200" aria-label="Notifications">
+                <Bell className="h-5 w-5" />
+              </button>
+              <button
+                onClick={handleLogout}
+                title="Log out"
+                className="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-50 text-rose-600 transition-colors hover:bg-rose-100"
+                aria-label="Log out"
+              >
+                <LogOut className="h-5 w-5" />
+              </button>
             </div>
           </div>
         </header>
 
-        {/* Dashboard Content Outlet */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-stone-50 p-4 lg:p-8">
+        <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 lg:px-8 lg:py-7">
           <Outlet />
         </main>
 
-        {/* Mobile Bottom Navigation */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-stone-200 flex justify-around items-center px-2 z-50">
-          {navItems.map((item) => {
-            const isActive = location.pathname.startsWith(item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className="flex flex-col items-center justify-center w-16 h-full space-y-1"
-              >
-                <div className={`p-1.5 rounded-full transition-colors ${isActive ? 'bg-stone-100' : 'bg-transparent'}`}>
-                  <Icon className={`w-5 h-5 ${isActive ? "text-stone-900" : "text-stone-500"}`} />
-                </div>
-                <span className={`text-[10px] font-medium ${isActive ? "text-stone-900" : "text-stone-500"}`}>
-                  {item.name}
-                </span>
-              </Link>
-            );
-          })}
+        <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+          <div className="grid h-16 grid-cols-4 gap-1">
+            {navItems.map((item) => {
+              const isActive = location.pathname.startsWith(item.href);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg text-[11px] font-semibold transition-colors ${
+                    isActive ? "text-rose-700" : "text-slate-400 hover:text-slate-700"
+                  }`}
+                >
+                  <span className={`flex h-8 w-10 items-center justify-center rounded-lg ${isActive ? "bg-rose-50" : "bg-transparent"}`}>
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <span className="truncate">{item.name}</span>
+                </Link>
+              );
+            })}
+          </div>
         </nav>
       </div>
     </div>

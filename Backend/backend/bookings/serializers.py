@@ -1,7 +1,19 @@
 # bookings/serializers.py
 
 from rest_framework import serializers
-from .models import Booking, BookingDate, BookingSlot, Payment
+from .models import Booking, BookingDate, BookingSlot, Payment, BookingExpense
+
+
+class BookingExpenseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BookingExpense
+        fields = ["id", "title", "amount", "note", "spent_at", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+    def validate_amount(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Amount must be greater than 0")
+        return value
 
 
 class BookingSlotSerializer(serializers.ModelSerializer):
@@ -45,6 +57,10 @@ class BookingCreateSerializer(serializers.ModelSerializer):
             "advance_amount",
             "dates",
         ]
+        extra_kwargs = {
+            "map_url": {"required": False, "allow_blank": True, "allow_null": True},
+            "alternative_phone_number": {"required": False, "allow_blank": True, "allow_null": True},
+        }
 
     # ---------------- VALIDATIONS ----------------
     def validate_phone_number(self, value):
@@ -96,18 +112,47 @@ class BookingCreateSerializer(serializers.ModelSerializer):
 class BookingListSerializer(serializers.ModelSerializer):
     total_paid = serializers.SerializerMethodField()
     balance_amount = serializers.SerializerMethodField()
+    total_expense = serializers.SerializerMethodField()
+    profit_amount = serializers.SerializerMethodField()
     payment_status = serializers.CharField(read_only=True)
     event_status = serializers.CharField(read_only=True)
+    dates = BookingDateSerializer(many=True, read_only=True)
+    expenses = BookingExpenseSerializer(many=True, read_only=True)
 
     class Meta:
         model = Booking
-        fields = "__all__"
+        fields = [
+            "id",
+            "customer_name",
+            "district",
+            "address",
+            "phone_number",
+            "alternative_phone_number",
+            "map_url",
+            "total_amount",
+            "advance_amount",
+            "created_at",
+            "total_paid",
+            "balance_amount",
+            "total_expense",
+            "profit_amount",
+            "payment_status",
+            "event_status",
+            "dates",
+            "expenses",
+        ]
 
     def get_total_paid(self, obj):
         return obj.total_paid
 
     def get_balance_amount(self, obj):
         return obj.balance_amount
+
+    def get_total_expense(self, obj):
+        return obj.total_expense
+
+    def get_profit_amount(self, obj):
+        return obj.profit_amount
     
 class AddPaymentSerializer(serializers.Serializer):
     amount = serializers.DecimalField(max_digits=10, decimal_places=2)
@@ -123,6 +168,17 @@ class AddPaymentSerializer(serializers.Serializer):
 
         return data
     
+class AddExpenseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BookingExpense
+        fields = ["title", "amount", "note", "spent_at"]
+
+    def validate_amount(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Amount must be greater than 0")
+        return value
+
+
 class BookingUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
@@ -135,6 +191,10 @@ class BookingUpdateSerializer(serializers.ModelSerializer):
             "map_url",
             "total_amount",
         ]
+        extra_kwargs = {
+            "map_url": {"required": False, "allow_blank": True, "allow_null": True},
+            "alternative_phone_number": {"required": False, "allow_blank": True, "allow_null": True},
+        }
 
     def validate_total_amount(self, value):
         booking = self.instance

@@ -32,6 +32,9 @@ urlpatterns = [
     # Vendor Login
     path("vendors/login/", VendorLoginView.as_view()),
 
+    # Vendor Logout
+    path("vendors/logout/", VendorLogoutView.as_view()),
+
     # Vendor Me
     path("vendors/me/", VendorMeView.as_view()),
 

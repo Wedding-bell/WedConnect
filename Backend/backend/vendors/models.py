@@ -51,11 +51,11 @@ class Vendor(models.Model):
     years_of_experience = models.PositiveIntegerField()
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="vendors")
 
-    districts = models.ManyToManyField(District, related_name="vendors")
+    districts = models.ManyToManyField(District, related_name="vendors", blank=True)
 
     instagram_url = models.URLField(blank=True, null=True)
 
-    joining_date = models.DateField()
+    joining_date = models.DateField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

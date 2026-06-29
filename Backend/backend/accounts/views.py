@@ -27,7 +27,6 @@ class AdminLoginView(APIView):
 
     def post(self, request):
         serializer = AdminLoginSerializer(data=request.data)
-
         if serializer.is_valid():
             user = serializer.validated_data["user"]
             tokens = get_tokens_for_user(user)
@@ -50,8 +49,7 @@ class AdminLogoutView(APIView):
     Blacklist the refresh token to log out.
     """
 
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         try:

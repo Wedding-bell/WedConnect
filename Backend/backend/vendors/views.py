@@ -169,7 +169,6 @@ class VendorLoginView(APIView):
 
         email = request.data.get("email")
         password = request.data.get("password")
-
         user = authenticate(username=email, password=password)
 
         if user is None:
@@ -193,6 +192,33 @@ class VendorLoginView(APIView):
             "access": str(refresh.access_token),
         })
     
+
+class VendorLogoutView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        refresh_token = request.data.get("refresh")
+
+        if not refresh_token:
+            return Response(
+                {"error": "Refresh token is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except Exception:
+            return Response(
+                {"error": "Invalid or expired token."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {"message": "Logout successful."},
+            status=status.HTTP_205_RESET_CONTENT,
+        )
+
 
 class VendorDeactivateView(APIView):
     permission_classes = [IsAdminUserOnly]
@@ -244,9 +270,12 @@ class VendorForgotPasswordView(APIView):
     def post(self, request):
         email = request.data.get("email")
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
+        user = User.objects.filter(
+            email=email,
+            vendor_profile__isnull=False,
+        ).first()
+
+        if user is None:
             return Response(
                 {"message": "If this email exists, a reset link has been sent."},
                 status=200,
@@ -255,19 +284,28 @@ class VendorForgotPasswordView(APIView):
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
 
-        reset_link = f"http://localhost:3000/reset-password/{uid}/{token}/"
+        frontend_base_url = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173").rstrip("/")
+        reset_link = f"{frontend_base_url}/vendors/reset-password/{uid}/{token}"
 
-        send_mail(
-            subject="Reset Your Password",
-            message=f"Click the link to reset your password:\n{reset_link}",
-            from_email=os.getenv("DEFAULT_FROM_EMAIL"),
-            recipient_list=[email],
-        )
+        try:
+            send_mail(
+                subject="Reset Your WedConnect Password",
+                message=f"Click the link to reset your password:\n{reset_link}",
+                from_email=os.getenv("DEFAULT_FROM_EMAIL"),
+                recipient_list=[email],
+                fail_silently=False,
+            )
+        except Exception:
+            return Response(
+                {"error": "Unable to send reset email right now. Please try again later."},
+                status=500,
+            )
 
         return Response(
-            {"message": "Password reset link sent to email."},
+            {"message": "If this email exists, a reset link has been sent."},
             status=200,
         )
+
     
 
 
