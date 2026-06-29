@@ -22,6 +22,7 @@ export function VendorLayout() {
     } finally {
       localStorage.removeItem("vendor_access_token");
       localStorage.removeItem("vendor_refresh_token");
+      localStorage.removeItem("active_role");
       navigate("/vendor/login");
     }
   };

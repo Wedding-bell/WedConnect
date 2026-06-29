@@ -29,6 +29,7 @@ export function AdminLogin() {
       if (response?.tokens?.access) {
         localStorage.removeItem("vendor_access_token");
         localStorage.removeItem("vendor_refresh_token");
+        localStorage.setItem("active_role", "admin");
         localStorage.setItem("token", response.tokens.access);
         if (response.tokens.refresh) {
           localStorage.setItem("refreshToken", response.tokens.refresh);

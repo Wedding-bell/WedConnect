@@ -13,6 +13,7 @@ export function AdminDashboard() {
     } finally {
       localStorage.removeItem("token");
       localStorage.removeItem("refreshToken");
+      localStorage.removeItem("active_role");
       navigate("/admin/login");
     }
   };

@@ -24,6 +24,7 @@ export function VendorLogin() {
       if (response.access) {
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
+        localStorage.setItem("active_role", "vendor");
         localStorage.setItem("vendor_access_token", response.access);
         localStorage.setItem("vendor_refresh_token", response.refresh);
         navigate("/vendor/dashboard");

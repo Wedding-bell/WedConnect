@@ -3,7 +3,6 @@ import {
   Home, 
   BookOpen, 
   Users, 
-  MessageSquare, 
   Search,
   Settings as SettingsIcon,
   Bell,
@@ -25,6 +24,7 @@ export function AdminLayout() {
     } finally {
       localStorage.removeItem("token");
       localStorage.removeItem("refreshToken");
+      localStorage.removeItem("active_role");
       navigate("/admin/login");
     }
   };
@@ -34,7 +34,6 @@ export function AdminLayout() {
     { name: "Categories", href: "/admin/categories", icon: Layers },
     { name: "Bookings", href: "/admin/bookings", icon: BookOpen },
     { name: "Vendors", href: "/admin/vendors", icon: Users },
-    { name: "Complaints", href: "/admin/complaints", icon: MessageSquare },
   ];
 
   return (
