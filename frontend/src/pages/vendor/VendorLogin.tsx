@@ -22,6 +22,8 @@ export function VendorLogin() {
     try {
       const response = await vendorLogin({ email, password });
       if (response.access) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
         localStorage.setItem("vendor_access_token", response.access);
         localStorage.setItem("vendor_refresh_token", response.refresh);
         navigate("/vendor/dashboard");

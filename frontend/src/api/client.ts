@@ -12,10 +12,28 @@ export const apiClient = axios.create({
   },
 });
 
+function isVendorRequest(url?: string) {
+  if (!url) return window.location.pathname.startsWith("/vendor");
+  return url.includes("/api/v1/vendors/") || url.includes("/api/v1/bookings/");
+}
+
+function isPublicAuthRequest(url?: string) {
+  if (!url) return false;
+  return (
+    url.includes("/login/") ||
+    url.includes("/forgot-password/") ||
+    url.includes("/reset-password/")
+  );
+}
+
 // Add auth token in a request interceptor
 apiClient.interceptors.request.use((config) => {
-  // Check for both admin and vendor tokens
-  const token = localStorage.getItem("token") || localStorage.getItem("vendor_access_token");
+  if (isPublicAuthRequest(config.url)) return config;
+
+  const token = isVendorRequest(config.url)
+    ? localStorage.getItem("vendor_access_token")
+    : localStorage.getItem("token");
+
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -25,10 +43,10 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    const isVendorPath = window.location.pathname.startsWith("/vendor");
-    const loginPath = isVendorPath ? "/vendor/login" : "/admin/login";
-    const accessKey = isVendorPath ? "vendor_access_token" : "token";
-    const refreshKey = isVendorPath ? "vendor_refresh_token" : "refreshToken";
+    const isVendor = isVendorRequest(originalRequest?.url);
+    const loginPath = isVendor ? "/vendor/login" : "/admin/login";
+    const accessKey = isVendor ? "vendor_access_token" : "token";
+    const refreshKey = isVendor ? "vendor_refresh_token" : "refreshToken";
 
     // If error is 401 and not already retrying
     if (error.response?.status === 401 && !originalRequest._retry) {

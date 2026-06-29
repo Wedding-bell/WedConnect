@@ -27,6 +27,8 @@ export function AdminLogin() {
     try {
       const response = await adminLogin({ username, password });
       if (response?.tokens?.access) {
+        localStorage.removeItem("vendor_access_token");
+        localStorage.removeItem("vendor_refresh_token");
         localStorage.setItem("token", response.tokens.access);
         if (response.tokens.refresh) {
           localStorage.setItem("refreshToken", response.tokens.refresh);
