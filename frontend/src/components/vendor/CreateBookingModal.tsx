@@ -549,7 +549,16 @@ export function CreateBookingModal({ isOpen, onClose, onSubmit, districts }: Pro
     setLoading(true);
     setError("");
     try {
-      await onSubmit(formData);
+      const payload: CreateBookingPayload = {
+        ...formData,
+        customer_name: formData.customer_name.trim(),
+        address: formData.address.trim(),
+        phone_number: formData.phone_number.trim(),
+        alternative_phone_number: formData.alternative_phone_number?.trim() || undefined,
+        map_url: formData.map_url?.trim() || undefined,
+      };
+
+      await onSubmit(payload);
       onClose();
     } catch (err) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

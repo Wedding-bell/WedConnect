@@ -57,6 +57,10 @@ class BookingCreateSerializer(serializers.ModelSerializer):
             "advance_amount",
             "dates",
         ]
+        extra_kwargs = {
+            "map_url": {"required": False, "allow_blank": True, "allow_null": True},
+            "alternative_phone_number": {"required": False, "allow_blank": True, "allow_null": True},
+        }
 
     # ---------------- VALIDATIONS ----------------
     def validate_phone_number(self, value):
@@ -187,6 +191,10 @@ class BookingUpdateSerializer(serializers.ModelSerializer):
             "map_url",
             "total_amount",
         ]
+        extra_kwargs = {
+            "map_url": {"required": False, "allow_blank": True, "allow_null": True},
+            "alternative_phone_number": {"required": False, "allow_blank": True, "allow_null": True},
+        }
 
     def validate_total_amount(self, value):
         booking = self.instance
